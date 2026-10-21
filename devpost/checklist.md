@@ -1,15 +1,15 @@
 ---
 doc: checklist
-status: draft
+status: approved
 ---
 
 # Build Checklist
 
-Build mode: not chosen yet (learn or fast — recorded once chosen; carried forward on resume)
+Build mode: fast
 
 ## Slices
 
-- [ ] **1. The teacher can declare their classroom reality**
+- [x] **1. The teacher can declare their classroom reality**
   Becomes usable: A running Village app on one screen where the teacher fills in grade, subject, topic, curriculum objective, class size, duration, constraints and material rows. "Generate lesson" stays disabled until the curriculum field and at least one material exist.
   Why now: Everything else in the product lands on this page, and it settles the spec's open question (two dev processes vs. one) before any AI code depends on it.
   PRD ref: `prd.md > The Core Journey` (steps 1-2), `prd.md > Screens and Layout`, `prd.md > States and Boundaries` (empty state)
@@ -61,7 +61,7 @@ Build mode: not chosen yet (learn or fast — recorded once chosen; carried forw
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 1: the teacher fills the real form and gives feedback on the paper-and-chalk look and the wording of the inputs, which shapes everything built on top of it
+- [ ] Early usable behavior explored — after slice 1: the teacher fills the real form and gives feedback on the paper-and-chalk look and the wording of the inputs, which shapes everything built on top of it (slice 1 built; awaiting the teacher's report)
 - [ ] Core-journey checkpoint — after slice 3: the teacher runs the money shot in the browser (generate, then remove a material and re-check) and reports what they see
 - [ ] Final kick-the-tires exploration and feedback completed
 
@@ -85,3 +85,6 @@ Activity mode:
 
 - The example-lesson button proposed in the first draft of the plan was removed — the learner asked for a real working app rather than a demo, so the product keeps a single path (Generate lesson → AI → checker) and the example lesson survives only as an internal test fixture for the checker.
 - The Groq model named in the spec (`llama-3.3-70b-versatile`) was retired by Groq on 2026-08-16 for free and developer tiers and is no longer returned by the models API — the spec's own fallback clause applies, so the default model is `openai/gpt-oss-120b` (verified working with Groq's strict JSON schema mode) and the model id is read from `GROQ_MODEL` rather than hardcoded.
+- The stack versions moved forward with what npm now ships (React 19, Vite 8, Express 5, groq-sdk 1.6) instead of the versions the spec named (React 18, Express 4) — same libraries, same architecture, but the spec's pins were already a year out of date and would have needed overriding immediately.
+- `src/lib/formRules.js` was added to the spec's file structure so the rule that decides when Generate is enabled lives in one plain function, testable from `npm run verify` without a browser.
+- `scripts/browser-check.js` drives the running app in headless Chrome over the DevTools protocol (Node's built-in `WebSocket` and `fetch` only, no new dependencies) because "it looks right" is not verification — the build needs to assert on what a teacher would actually see.

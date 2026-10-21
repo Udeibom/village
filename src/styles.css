@@ -1,0 +1,284 @@
+/* Village — paper and chalk.
+   Warm paper, muted earth tones, one serif for headings and a humanist sans
+   for reading. No framework, no blue-purple gradients. */
+
+:root {
+  --paper: #f3ece0;
+  --paper-raised: #fbf7ef;
+  --paper-sunk: #ece3d3;
+  --ink: #2f2a23;
+  --ink-soft: #6d6355;
+  --ink-faint: #948878;
+  --clay: #b05c3b;
+  --clay-deep: #8d4526;
+  --moss: #5d6f42;
+  --rule: #ddd1bb;
+  --rule-soft: #e8dfcd;
+
+  --font-heading: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  --shadow-card: 0 1px 0 rgba(47, 42, 35, 0.04), 0 6px 18px rgba(90, 74, 52, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  background-image: radial-gradient(
+      circle at 18% 12%,
+      rgba(255, 255, 255, 0.55),
+      transparent 45%
+    ),
+    radial-gradient(circle at 82% 78%, rgba(176, 92, 59, 0.05), transparent 40%);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.masthead {
+  border-bottom: 2px solid var(--rule);
+  padding-bottom: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.masthead h1 {
+  font-family: var(--font-heading);
+  font-size: 2.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--clay-deep);
+}
+
+.tagline {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1.4rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.card h2 {
+  font-family: var(--font-heading);
+  font-size: 1.32rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.card-hint {
+  margin: 0 0 1.1rem;
+  color: var(--ink-soft);
+  font-size: 0.93rem;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem 1.1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.field-grid .field {
+  margin-bottom: 0;
+}
+
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.required {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--clay-deep);
+}
+
+input[type='text'],
+input[type='number'],
+textarea {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  background: #fffdf8;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 1px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-faint);
+}
+
+.materials-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.material-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.material-row {
+  display: grid;
+  grid-template-columns: 1fr 110px auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.material-quantity {
+  text-align: left;
+}
+
+.empty-note {
+  margin: 0.25rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed var(--rule);
+  border-radius: 4px;
+  color: var(--ink-soft);
+  font-size: 0.93rem;
+}
+
+.button-primary {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff8f1;
+  background: var(--clay);
+  border: 1px solid var(--clay-deep);
+  border-radius: 4px;
+  padding: 0.7rem 1.5rem;
+  cursor: pointer;
+}
+
+.button-primary:hover:not(:disabled) {
+  background: var(--clay-deep);
+}
+
+.button-primary:disabled {
+  background: var(--paper-sunk);
+  border-color: var(--rule);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.button-quiet {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--clay-deep);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+
+.button-quiet:hover {
+  background: var(--paper-sunk);
+}
+
+.button-remove {
+  color: var(--ink-soft);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-hint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.notice {
+  border-radius: 4px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.notice-error {
+  background: #f6e3d8;
+  border: 1px solid #d8a887;
+}
+
+.notice-text {
+  margin: 0;
+  color: var(--clay-deep);
+}
+
+@media (max-width: 560px) {
+  .material-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .button-remove {
+    grid-column: 1 / -1;
+  }
+}

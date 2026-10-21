@@ -1,0 +1,90 @@
+import React, { useState } from 'react'
+import LessonRequestForm from './components/LessonRequestForm.jsx'
+import RealityForm from './components/RealityForm.jsx'
+import MaterialsList from './components/MaterialsList.jsx'
+import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
+import { generateLesson } from './api.js'
+
+export default function App() {
+  const [form, setForm] = useState(emptyForm)
+  const [status, setStatus] = useState('idle')
+  const [error, setError] = useState('')
+
+  const handleChange = (field, value) => {
+    setForm((current) => {
+      const next = { ...current, [field]: value }
+      if (field === 'topic') next.learningObjective = value
+      return next
+    })
+  }
+
+  const handleMaterialsChange = (materials) => {
+    setForm((current) => ({ ...current, materials }))
+  }
+
+  const handleGenerate = async () => {
+    setStatus('building')
+    setError('')
+    try {
+      await generateLesson(normalizeForm(form))
+      setStatus('idle')
+    } catch (failure) {
+      setError(failure.message)
+      setStatus('error')
+    }
+  }
+
+  const ready = canGenerate(form)
+
+  return (
+    <div className="page">
+      <header className="masthead">
+        <h1>Village</h1>
+        <p className="tagline">
+          Lesson plans that fit the room you actually have.
+        </p>
+      </header>
+
+      <main className="sheet">
+        <LessonRequestForm form={form} onChange={handleChange} />
+        <RealityForm form={form} onChange={handleChange} />
+
+        <section className="card">
+          <MaterialsList
+            materials={form.materials}
+            onChange={handleMaterialsChange}
+          />
+        </section>
+
+        <div className="actions">
+          <button
+            type="button"
+            className="button-primary"
+            onClick={handleGenerate}
+            disabled={!ready || status === 'building'}
+          >
+            {status === 'building' ? 'Building your lesson…' : 'Generate lesson'}
+          </button>
+          {!ready && (
+            <p className="action-hint">
+              Add a curriculum objective and at least one material to enable this.
+            </p>
+          )}
+        </div>
+
+        {status === 'error' && (
+          <div className="notice notice-error" role="alert">
+            <p className="notice-text">{error}</p>
+            <button
+              type="button"
+              className="button-quiet"
+              onClick={handleGenerate}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

@@ -73,7 +73,7 @@ Build mode: fast
 
 - [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
 - [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse — generated at commit `717e06c`, rendered in headless Chrome to confirm it is not blank and does not overflow, and checked for the offline rules the skill sets: no scripts, no network dependency, no secrets, balanced markup. The practice in the map is the real false negative from the live Groq run, with the fix (`matchingKey`) and the test that holds it in place.
 
 Activity and evidence:
 Route and stops:

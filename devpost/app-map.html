@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Village — app map</title>
+    <style>
+      :root {
+        --paper: #f6f1e6;
+        --raised: #fbf7ef;
+        --ink: #2f2a24;
+        --ink-soft: #6d6355;
+        --rule: #ddd1bb;
+        --sunk: #ece3d3;
+        --clay: #b05c3b;
+        --clay-deep: #8d4526;
+        --font-heading: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+        --font-body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 2rem 1.25rem 4rem;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-body);
+        line-height: 1.6;
+      }
+      main { max-width: 60rem; margin: 0 auto; }
+      h1, h2, h3 { font-family: var(--font-heading); line-height: 1.25; }
+      h1 { font-size: 2rem; margin: 0 0 0.3rem; }
+      h2 { font-size: 1.3rem; margin: 2.6rem 0 0.8rem; padding-bottom: 0.35rem; border-bottom: 2px solid var(--rule); }
+      h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+      p.lede { color: var(--ink-soft); margin: 0 0 0.4rem; }
+      .card {
+        background: var(--raised);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        padding: 1.1rem 1.3rem;
+        margin: 0 0 1.1rem;
+      }
+      code, pre { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+      code { background: var(--sunk); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.9em; }
+      pre {
+        background: var(--sunk);
+        border-radius: 5px;
+        padding: 0.8rem 0.95rem;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+      pre code { background: none; padding: 0; }
+      ul, ol { padding-left: 1.3rem; }
+      li { margin-bottom: 0.45rem; }
+      a { color: var(--clay-deep); }
+      .tag {
+        display: inline-block;
+        background: var(--sunk);
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        padding: 0.05rem 0.55rem;
+        font-size: 0.75rem;
+        color: var(--ink-soft);
+        vertical-align: middle;
+      }
+      .route-stop { border-left: 3px solid var(--clay); padding: 0.1rem 0 0.1rem 0.9rem; margin-bottom: 1.1rem; }
+      .route-stop h3 { margin-top: 0; }
+      .route-stop p { margin: 0.2rem 0; }
+      .diagram { width: 100%; height: auto; display: block; }
+      .diagram text { font-family: var(--font-body); fill: var(--ink); }
+      .diagram .small { font-size: 12px; fill: var(--ink-soft); }
+      .diagram .box { fill: var(--raised); stroke: var(--rule); }
+      .diagram .accent { fill: #f3e3d8; stroke: var(--clay); }
+      .diagram .arrow { stroke: var(--ink-soft); stroke-width: 1.6; fill: none; marker-end: url(#tip); }
+      details { border: 1px solid var(--rule); border-radius: 5px; padding: 0.5rem 0.8rem; background: var(--raised); margin-bottom: 0.8rem; }
+      summary { cursor: pointer; font-weight: 600; }
+      footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--ink-soft); font-size: 0.9rem; }
+      @media print {
+        body { background: #fff; padding: 0; }
+        .card, details { border-color: #999; }
+        h2 { border-bottom-color: #999; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Village — app map</h1>
+      <p class="lede">
+        Lesson plans that fit the room you actually have. Village writes a lesson with an AI,
+        then checks its own work with plain JavaScript before it is allowed to say the lesson
+        is ready to teach.
+      </p>
+      <p class="lede">
+        Take-home reference, generated from the code at commit <code>717e06c</code>.
+        A snapshot — it can drift as the code changes.
+      </p>
+
+      <h2>The app in three pieces</h2>
+      <div class="card">
+        <ol>
+          <li>
+            <strong>The teacher page</strong> — one screen: the lesson request, the classroom
+            reality, the materials list, and the Generate button that stays disabled until
+            there is a curriculum objective and one material to check against.
+            <br /><code>src/App.jsx</code>, <code>src/components/</code>
+          </li>
+          <li>
+            <strong>The writer</strong> — Groq, in strict JSON mode, with a repair retry when
+            the reply does not fit the shape. It writes; it never judges its own work.
+            <br /><code>server/grok.js</code>
+          </li>
+          <li>
+            <strong>The checker</strong> — plain functions, no AI: materials against the
+            inventory, timings against the lesson length, the assessment against the
+            objective, and the curriculum claim.
+            <br /><code>server/validate.js</code>
+          </li>
+        </ol>
+      </div>
+
+      <h2>One action, end to end</h2>
+      <p>
+        The teacher clicks <strong>Generate lesson</strong> and waits a couple of seconds.
+        Here is everything that happens, and where it lives.
+      </p>
+
+      <svg class="diagram" viewBox="0 0 820 300" role="img"
+           aria-label="Flow diagram: the Generate button posts the form to the API, the API asks Groq for a lesson, the checker checks the lesson against the inventory, and if something is short the lesson is rebuilt and checked again before the panel shows a verdict.">
+        <defs>
+          <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d6355" />
+          </marker>
+        </defs>
+
+        <rect class="box" x="8" y="40" width="150" height="62" rx="6" />
+        <text x="20" y="66" font-size="14">Teacher clicks</text>
+        <text x="20" y="84" font-size="14">Generate</text>
+        <text class="small" x="20" y="128">src/App.jsx</text>
+
+        <rect class="box" x="196" y="40" width="168" height="62" rx="6" />
+        <text x="208" y="66" font-size="14">POST /api/generate</text>
+        <text class="small" x="208" y="88">server/index.js</text>
+
+        <rect class="accent" x="402" y="40" width="168" height="62" rx="6" />
+        <text x="414" y="66" font-size="14">Groq writes a lesson</text>
+        <text class="small" x="414" y="88">server/grok.js</text>
+
+        <rect class="accent" x="608" y="40" width="190" height="62" rx="6" />
+        <text x="620" y="66" font-size="14">Checker checks it</text>
+        <text class="small" x="620" y="88">server/validate.js</text>
+
+        <path class="arrow" d="M 158 71 L 190 71" />
+        <path class="arrow" d="M 364 71 L 396 71" />
+        <path class="arrow" d="M 570 71 L 602 71" />
+
+        <rect class="accent" x="402" y="180" width="168" height="62" rx="6" />
+        <text x="414" y="206" font-size="14">Rebuild if short</text>
+        <text class="small" x="414" y="228">server/rebuild.js</text>
+
+        <rect class="box" x="608" y="180" width="190" height="62" rx="6" />
+        <text x="620" y="206" font-size="14">Verdict in the panel</text>
+        <text class="small" x="620" y="228">src/components/</text>
+
+        <path class="arrow" d="M 703 102 L 703 140 L 486 140 L 486 174" />
+        <path class="arrow" d="M 570 211 L 602 211" />
+        <path class="arrow" d="M 300 100 L 300 211 L 602 211" />
+        <text class="small" x="316" y="132">short → rebuild (max 2) → check again</text>
+      </svg>
+
+      <h2>A 3-stop route through the code</h2>
+      <p class="lede">
+        A reference route — follow it if you want to see the whole path for yourself.
+        The teacher in this project has already run it live, so this is a pointer, not a test.
+      </p>
+
+      <div class="route-stop">
+        <h3>1. The button that cannot be pressed yet</h3>
+        <p><code>src/lib/formRules.js</code> → <code>canGenerate(form)</code></p>
+        <p>
+          The rule that keeps Generate disabled until there is a curriculum objective and at
+          least one material lives here, in one plain function, so it can be tested without a
+          browser. <code>src/App.jsx</code> reads it and sets <code>disabled</code> on the button.
+        </p>
+      </div>
+
+      <div class="route-stop">
+        <h3>2. The part that must not lie</h3>
+        <p><code>server/validate.js</code> → <code>checkLesson(lesson, form)</code></p>
+        <p>
+          Four checks, each returning its own pass/fail and a plain-language line for the
+          teacher: <code>checkMaterials</code> (peak simultaneous need, not a sum),
+          <code>checkTiming</code> (2-minute tolerance, under 60% fill fails),
+          <code>checkAssessment</code> (does the assessment test the objective),
+          <code>checkCurriculum</code> (what Village can and cannot confirm about curriculum).
+          No AI is involved anywhere in this file — that is the whole point.
+        </p>
+      </div>
+
+      <div class="route-stop">
+        <h3>3. The loop that keeps trying</h3>
+        <p><code>server/rebuild.js</code> → <code>buildLessonWithRebuilds(...)</code></p>
+        <p>
+          Write, check, and if something is short, rebuild the lesson around what is
+          actually on the table — at most <code>MAX_REBUILDS = 2</code> times. The generator
+          and the rebuilder are passed in as arguments, so the whole loop can be tested with
+          fakes in <code>scripts/verify.js</code> without spending a single API call.
+        </p>
+      </div>
+
+      <h2>To change this, start here</h2>
+      <div class="card">
+        <ul>
+          <li>
+            <strong>The wording of the lesson, or what the model is told to do</strong> →
+            <code>buildGenerationPrompt</code> and <code>buildRebuildPrompt</code> in
+            <code>server/grok.js</code>. Both take the teacher's form, so the instructions
+            change in one place. <code>npm run ai-check</code> shows what the model then
+            actually produced.
+          </li>
+          <li>
+            <strong>A rule about what counts as enough</strong> → <code>server/validate.js</code>.
+            <code>requiredMaterials</code> works out the peak simultaneous need,
+            <code>parseQuantity</code> decides what can be counted, <code>objectivesMatch</code>
+            and <code>matchingKey</code> decide whether the assessment really tests the objective.
+            Every rule there has a case in <code>scripts/verify.js</code>.
+          </li>
+          <li>
+            <strong>What the teacher sees in the panel</strong> → <code>src/components/FeasibilityPanel.jsx</code>.
+            The wording of each verdict and each check line is here, in plain language, next to
+            the check it belongs to.
+          </li>
+          <li>
+            <strong>What the teacher can edit, and what stays put</strong> →
+            <code>src/components/LessonPlan.jsx</code>. Dotted lines are editable; the
+            assessment block is tagged <span class="tag">Village checks this one</span> because
+            the checker reads what the assessment claims to test.
+          </li>
+          <li>
+            <strong>The printable page</strong> → <code>src/components/PrintView.jsx</code> and
+            the <code>@media print</code> block at the end of <code>src/styles.css</code>.
+          </li>
+        </ul>
+      </div>
+
+      <h2>A practice to reuse</h2>
+      <div class="card">
+        <p>
+          <strong>The moment:</strong> a live Groq run produced an assessment that said it tested
+          “students will demonstrate understanding by correctly forming and comparing ratios”
+          while the teacher's objective was “understand and represent ratios”. The checker called
+          that a mismatch and told the teacher the lesson needed attention. It was wrong.
+        </p>
+        <p>
+          <strong>How it was settled:</strong> by reading the two texts and asking which side
+          was at fault — the model, or the checker. The assessment did test the objective, so the
+          checker was comparing too literally. The fix was in
+          <code>matchingKey</code> (<code>server/validate.js</code>): words are compared on their
+          first four letters, so “comparing” and “compare” are the same word.
+        </p>
+        <p>
+          <strong>Where it is kept:</strong> the live failure is a permanent case —
+          <em>“an assessment that describes the objective in its own words still counts”</em> in
+          <code>scripts/verify.js</code>. Break <code>matchingKey</code> and that case fails,
+          which is how you know the check can fail at all.
+        </p>
+        <p>
+          <strong>How to reuse it:</strong> when a check fails on real output, decide which side
+          is wrong before changing either, and make sure the check is capable of failing. A
+          checker that cannot fail is not evidence of anything, and a prompt tuned against one
+          happy path will meet the next teacher immediately.
+        </p>
+      </div>
+
+      <h2>Running it again</h2>
+      <div class="card">
+        <pre><code>cd village
+npm install
+cp .env.example .env     # then paste your GROQ_API_KEY into .env
+npm run dev             # page on http://localhost:5173, API on :3001</code></pre>
+        <p style="margin-bottom: 0.3rem;">Checks, in the order worth running them:</p>
+        <pre><code>npm run verify         # 50 assertions on the rules — no browser, no API calls
+npm run browser-check  # 27 checks driving the real app in headless Chrome (stubbed, free)
+npm run ai-check       # a live run against Groq — costs a little money</code></pre>
+      </div>
+
+      <footer>
+        Generated from the code at commit <code>717e06c</code>. Everything above is a snapshot
+        of that commit; if the code moves on, the map can drift. The live app is the source of
+        truth — start it and try the journey.
+      </footer>
+    </main>
+  </body>
+</html>

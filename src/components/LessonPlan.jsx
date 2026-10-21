@@ -158,8 +158,27 @@ export default function LessonPlan({ lesson, onEdit }) {
 
   return (
     <article className="lesson">
+      {onEdit && (
+        <p className="edit-hint">
+          The dotted lines are yours to rewrite. Click one, type, and press
+          Enter. Village checks your change as soon as you make it.
+        </p>
+      )}
+
       <h2 className="lesson-title">{lesson.title}</h2>
-      <p className="lesson-intro">{lesson.intro}</p>
+      <p className="lesson-intro">
+        {onEdit ? (
+          <EditableText
+            className="lesson-intro-text"
+            label="Introduction to the lesson"
+            value={lesson.intro}
+            multiline
+            onCommit={(intro) => onEdit({ ...lesson, intro })}
+          />
+        ) : (
+          lesson.intro
+        )}
+      </p>
 
       <ol className="activities">
         {(lesson.activities || []).map((activity, index) => (
@@ -232,13 +251,28 @@ export default function LessonPlan({ lesson, onEdit }) {
       {lesson.adaptations && (
         <section className="lesson-section">
           <h3>If pupils need more, or less</h3>
-          <p>{lesson.adaptations}</p>
+          <p>
+            {onEdit ? (
+              <EditableText
+                className="lesson-adaptations-text"
+                label="Adapting the lesson"
+                value={lesson.adaptations}
+                multiline
+                onCommit={(adaptations) => onEdit({ ...lesson, adaptations })}
+              />
+            ) : (
+              lesson.adaptations
+            )}
+          </p>
         </section>
       )}
 
       {lesson.assessment && (
         <section className="lesson-section lesson-assessment">
-          <h3>Assessment</h3>
+          <h3>
+            Assessment
+            <span className="checked-tag">Village checks this one</span>
+          </h3>
           <p>{lesson.assessment.instructions}</p>
           <p className="lesson-trace">
             Tests: <strong>{lesson.assessment.servesObjective}</strong>

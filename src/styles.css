@@ -484,9 +484,11 @@ textarea::placeholder {
 
 /* --- editable lesson text -------------------------------------------- */
 
+/* The dotted line is the affordance: a teacher can see what they may
+   rewrite without having to hover over it first. */
 .editable {
   display: inline-block;
-  border-bottom: 1px dotted transparent;
+  border-bottom: 1px dotted var(--rule);
   border-radius: 2px;
   cursor: text;
   transition: background-color 120ms ease, border-color 120ms ease;
@@ -495,7 +497,7 @@ textarea::placeholder {
 .editable:hover,
 .editable:focus-visible {
   background: var(--paper-sunk);
-  border-bottom-color: var(--rule);
+  border-bottom-color: var(--clay);
   outline: none;
 }
 
@@ -537,6 +539,37 @@ textarea::placeholder {
   font-size: 0.88rem;
   font-style: italic;
   color: var(--ink-soft);
+}
+
+.recheck-note {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.edit-hint {
+  margin: 0 0 1.2rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--paper-sunk);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.checked-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  vertical-align: middle;
 }
 
 /* --- print view -------------------------------------------------------- */

@@ -37,7 +37,7 @@ function Check({ title, status, children }) {
   )
 }
 
-export default function FeasibilityPanel({ feasibility, checking = false }) {
+export default function FeasibilityPanel({ feasibility, checking = false, rechecked = false }) {
   if (!feasibility) return null
 
   const { verdict, checks } = feasibility
@@ -68,6 +68,10 @@ export default function FeasibilityPanel({ feasibility, checking = false }) {
         </p>
       )}
       </div>
+
+      {rechecked && !checking && (
+        <p className="recheck-note">Village re-checked this after your change.</p>
+      )}
 
       {rebuilds > 0 && (
         <p className="rebuild-note">

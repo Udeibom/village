@@ -553,6 +553,25 @@ check('removing a material changes the lesson, not just the verdict', async () =
   }
 })
 
+check('the teacher can see what they are allowed to change', async () => {
+  const hint = await page.text('.edit-hint')
+  if (!hint.includes('dotted lines')) {
+    throw new Error('the lesson does not say what can be changed')
+  }
+  const tag = await page.text('.checked-tag')
+  if (!tag.includes('Village checks')) {
+    throw new Error('the assessment is not marked as the part Village checks')
+  }
+  const underline = await page.evaluate(() => {
+    const element = document.querySelector('.activity-instructions-text')
+    const style = window.getComputedStyle(element)
+    return style.borderBottomStyle
+  })
+  if (underline === 'none') {
+    throw new Error('the editable lines are not marked as editable')
+  }
+})
+
 check('editing an activity re-checks the lesson', async () => {
   // Ask the first activity for something the teacher does not have.
   await page.click('.activities > .activity:first-child .button-add-material')
@@ -583,6 +602,9 @@ check('editing an activity re-checks the lesson', async () => {
   }
   if (!panelText.includes('not on your list')) {
     throw new Error('the panel does not say the material is not on the list')
+  }
+  if (!panelText.includes('re-checked this after your change')) {
+    throw new Error('the panel does not say it re-checked the change')
   }
 })
 

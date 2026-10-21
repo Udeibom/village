@@ -15,6 +15,7 @@ export default function App() {
   const [lesson, setLesson] = useState(null)
   const [feasibility, setFeasibility] = useState(null)
   const [checking, setChecking] = useState(false)
+  const [rechecked, setRechecked] = useState(false)
   const [printing, setPrinting] = useState(false)
   const checkNumber = useRef(0)
 
@@ -33,6 +34,7 @@ export default function App() {
   const handleGenerate = async () => {
     setStatus('building')
     setError('')
+    setRechecked(false)
     try {
       const result = await generateLesson(normalizeForm(form))
       setLesson(result.lesson)
@@ -51,7 +53,10 @@ export default function App() {
     setChecking(true)
     try {
       const result = await checkLesson({ lesson: nextLesson, form: nextForm })
-      if (number === checkNumber.current) setFeasibility(result.feasibility)
+      if (number === checkNumber.current) {
+        setFeasibility(result.feasibility)
+        setRechecked(true)
+      }
     } catch (failure) {
       if (number === checkNumber.current) setError(failure.message)
     } finally {
@@ -149,7 +154,11 @@ export default function App() {
               <LessonPlan lesson={lesson} onEdit={setLesson} />
             </div>
             <div className="result-panel">
-              <FeasibilityPanel feasibility={feasibility} checking={checking} />
+              <FeasibilityPanel
+                feasibility={feasibility}
+                checking={checking}
+                rechecked={rechecked}
+              />
             </div>
           </section>
         )}

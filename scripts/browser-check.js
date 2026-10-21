@@ -459,15 +459,65 @@ check('a material with no count is not quietly called enough', async () => {
   }
 })
 
+check('the panel says the lesson was rebuilt around the materials', async () => {
+  const note = await page.text('.rebuild-note')
+  if (!note) throw new Error('the panel does not say the lesson was rebuilt')
+  if (!note.includes('rebuilt')) {
+    throw new Error(`the rebuild note does not read right: "${note}"`)
+  }
+})
+
+check('removing a material changes the lesson, not just the verdict', async () => {
+  // Put back the quantity cleared by the check above, so this is the money
+  // shot on its own: a complete inventory, then one material gone.
+  await page.fillLast('input[aria-label="Quantity"]', '1')
+  await sleep(150)
+  await page.click('button[aria-label="Remove measuring cups"]')
+  await sleep(200)
+
+  const rows = await page.count('input[aria-label="Material name"]')
+  if (rows !== INVENTORY.length - 1) {
+    throw new Error(`expected ${INVENTORY.length - 1} material rows, got ${rows}`)
+  }
+
+  await page.click('button.button-primary')
+  await page.waitFor(
+    `document.querySelectorAll('.material-check').length === ${INVENTORY.length - 1}`,
+    20000,
+    'the panel to show the new inventory',
+  )
+
+  const lessonText = await page.text('.result-lesson')
+  if (lessonText.includes('measuring cups')) {
+    throw new Error('the lesson still asks for measuring cups')
+  }
+
+  const panelText = await page.text('.feasibility')
+  if (panelText.includes('measuring cups')) {
+    throw new Error('the panel still names the removed material')
+  }
+
+  const verdict = await page.text('.verdict-title')
+  if (verdict !== 'Ready to teach') {
+    throw new Error(`expected "Ready to teach", got "${verdict}"`)
+  }
+})
+
 check('the teacher keeps everything they typed after a result', async () => {
   const topic = await page.evaluate(
     () => document.querySelector('input[name="topic"]').value,
   )
   if (topic !== FORM.topic) throw new Error(`the topic is now "${topic}"`)
+  // One row was removed by the money shot above, on purpose.
   const rows = await page.count('input[aria-label="Material name"]')
-  if (rows !== INVENTORY.length) {
-    throw new Error(`expected ${INVENTORY.length} material rows, got ${rows}`)
+  if (rows !== INVENTORY.length - 1) {
+    throw new Error(`expected ${INVENTORY.length - 1} material rows, got ${rows}`)
   }
+  const name = await page.evaluate(() => {
+    const first = document.querySelector('input[aria-label="Material name"]')
+    return first ? first.value : null
+  })
+  if (name !== INVENTORY[0][0]) throw new Error(`the first material is now "${name}"`)
 })
 
 check('on a wide screen the panel sits beside the lesson', async () => {

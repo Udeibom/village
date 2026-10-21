@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import express from 'express'
-import { generateLesson } from './grok.js'
-import { checkLesson } from './validate.js'
-import { stubLesson } from './stub.js'
+import { generateLesson, rebuildLesson } from './grok.js'
+import { buildLessonWithRebuilds } from './rebuild.js'
+import { stubLesson, stubRebuild } from './stub.js'
 import { normalizeForm } from '../src/lib/formRules.js'
 
 const app = express()
@@ -38,8 +38,12 @@ app.post('/api/generate', async (req, res) => {
   const form = normalizeForm(req.body || {})
 
   try {
-    const lesson = STUB ? stubLesson(form) : await generateLesson(form)
-    const feasibility = checkLesson(lesson, form)
+    const { lesson, feasibility } = await buildLessonWithRebuilds(form, {
+      generate: STUB ? (f) => stubLesson(f) : (f) => generateLesson(f),
+      rebuild: STUB
+        ? (current, f, gaps) => stubRebuild(current, f, gaps)
+        : (current, f, gaps) => rebuildLesson(current, f, gaps),
+    })
     res.json({ lesson, feasibility })
   } catch (error) {
     console.error('generate failed:', error && error.message)

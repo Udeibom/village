@@ -43,6 +43,7 @@ export default function FeasibilityPanel({ feasibility }) {
   const { verdict, checks } = feasibility
   const ready = verdict === 'ready'
   const materials = checks.materials || []
+  const rebuilds = feasibility.rebuildsAttempted || 0
 
   return (
     <aside className="feasibility" aria-labelledby="feasibility-heading">
@@ -61,6 +62,17 @@ export default function FeasibilityPanel({ feasibility }) {
           </p>
         </div>
       </div>
+
+      {rebuilds > 0 && (
+        <p className="rebuild-note">
+          {rebuilds === 1
+            ? 'Village rebuilt this lesson once, around the materials you actually have.'
+            : `Village rebuilt this lesson ${rebuilds} times, around the materials you actually have.`}
+          {ready
+            ? ''
+            : ' It still could not sort everything out — the gaps below are the ones left.'}
+        </p>
+      )}
 
       <Check title="Materials" status={materials.every((row) => row.status === 'ok') ? 'ok' : 'fail'}>
         {materials.length === 0 ? (

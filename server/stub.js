@@ -21,6 +21,13 @@ const ACTIVITY_NAMES = [
   'Consolidation',
 ]
 
+function normalise(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
 export function stubLesson(form) {
   const duration = form.durationMinutes || 40
   const minutes = splitEvenly(duration, 4)
@@ -39,10 +46,21 @@ export function stubLesson(form) {
   }
 
   const activities = minutes.map((length, index) => {
-    const materials = byActivity[index].map((material) => ({
-      name: material.name,
-      quantityNeeded: material.quantity ? material.quantity : 'a handful',
-    }))
+    const materials = byActivity[index].map((material, materialIndex) => {
+      const quantity = material.quantity ? material.quantity : 'a handful'
+
+      // The stub deliberately asks for one more of the first material than
+      // the teacher has, so the rebuild loop always has real work to do
+      // during the browser check. The real AI is not like this.
+      if (index === 0 && materialIndex === 0) {
+        const count = Number(quantity)
+        if (Number.isFinite(count)) {
+          return { name: material.name, quantityNeeded: String(count + 1) }
+        }
+      }
+
+      return { name: material.name, quantityNeeded: quantity }
+    })
 
     return {
       name: `${ACTIVITY_NAMES[index]}: ${form.topic || 'the topic'}`,
@@ -71,4 +89,37 @@ export function stubLesson(form) {
     curriculumNote:
       'The activities work on the objective the teacher gave, using the materials they listed.',
   }
+}
+
+// The stub's rebuild: bring every material requirement back inside what the
+// teacher has, and drop the ones they do not have at all.
+export function stubRebuild(lesson, form, gaps) {
+  const inventory = new Map(
+    (form.materials || []).map((material) => [normalise(material.name), material]),
+  )
+  const gapNames = new Set(gaps.map((gap) => normalise(gap.name)))
+
+  const activities = (lesson.activities || []).map((activity) => ({
+    ...activity,
+    materials: (activity.materials || [])
+      .filter((material) => {
+        if (!gapNames.has(normalise(material.name))) return true
+        return inventory.has(normalise(material.name))
+      })
+      .map((material) => {
+        const have = inventory.get(normalise(material.name))
+        const needed = Number(material.quantityNeeded)
+        const haveCount = Number(have && have.quantity)
+        if (
+          Number.isFinite(needed) &&
+          Number.isFinite(haveCount) &&
+          needed > haveCount
+        ) {
+          return { ...material, quantityNeeded: String(haveCount) }
+        }
+        return material
+      }),
+  }))
+
+  return { ...lesson, activities }
 }

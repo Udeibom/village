@@ -486,6 +486,15 @@ textarea::placeholder {
   margin-bottom: 1.1rem;
 }
 
+.rebuild-note {
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--paper-sunk);
+  border-left: 3px solid var(--moss);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
 .check-title {
   display: flex;
   align-items: baseline;

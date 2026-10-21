@@ -7,11 +7,12 @@ import assert from 'node:assert/strict'
 import { canGenerate, emptyForm, normalizeForm, toNumberOrNull } from '../src/lib/formRules.js'
 import { checkLesson, shortfalls, parseQuantity, objectivesMatch } from '../server/validate.js'
 import { validateLessonShape } from '../server/grok.js'
+import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
 import {
   exampleLesson,
   exampleInventory,
   exampleForm,
-} from './fixtures/exampleLesson.js'
+} from '../server/fixtures/exampleLesson.js'
 
 let passed = 0
 const failures = []
@@ -28,11 +29,50 @@ function check(name, fn) {
   }
 }
 
+async function acheck(name, fn) {
+  try {
+    await fn()
+    passed += 1
+    console.log(`  ok  ${name}`)
+  } catch (error) {
+    failures.push({ name, error })
+    console.log(`FAIL  ${name}`)
+    console.log(`      ${error.message.split('\n')[0]}`)
+  }
+}
+
 function section(title) {
   console.log(`\n${title}`)
 }
 
 console.log('Village — verify\n')
+
+// A lesson and an inventory where every count is a number, so the whole
+// check can pass and the green light is reachable.
+const countableLesson = {
+  ...exampleLesson,
+  activities: exampleLesson.activities.map((activity) => ({
+    ...activity,
+    materials: activity.materials.map((material) =>
+      material.name === 'beans' ? { ...material, quantityNeeded: '20' } : material,
+    ),
+  })),
+}
+
+const countableForm = {
+  ...exampleForm,
+  materials: exampleInventory.map((material) =>
+    material.name === 'beans' ? { ...material, quantity: '30' } : material,
+  ),
+}
+
+// The same, but with eight bottle tops short.
+const shortForm = {
+  ...countableForm,
+  materials: countableForm.materials.map((material) =>
+    material.name === 'bottle tops' ? { ...material, quantity: '32' } : material,
+  ),
+}
 
 section('Generate gating')
 check('empty form cannot generate', () => {
@@ -242,6 +282,18 @@ check('an assessment that tests something else is flagged', () => {
   assert.equal(result.checks.assessment.status, 'fail')
   assert.match(result.checks.assessment.detail, /not the objective you gave/)
 })
+check('an assessment that describes the objective in its own words still counts', () => {
+  const lesson = {
+    ...exampleLesson,
+    assessment: {
+      ...exampleLesson.assessment,
+      servesObjective:
+        'Students will demonstrate understanding by correctly forming and comparing ratios in a short written task.',
+    },
+  }
+  const result = checkLesson(lesson, exampleForm)
+  assert.equal(result.checks.assessment.status, 'ok')
+})
 check('an assessment that declares no objective is flagged', () => {
   const lesson = {
     ...exampleLesson,
@@ -377,6 +429,97 @@ check('quantities are only numbers when they can be counted', () => {
   assert.equal(parseQuantity('40'), 40)
   assert.equal(parseQuantity('a bag'), null)
   assert.equal(parseQuantity(''), null)
+})
+
+section('The rebuild loop')
+await acheck('a lesson that already fits is left alone', async () => {
+  let rebuilds = 0
+  const { feasibility } = await buildLessonWithRebuilds(countableForm, {
+    generate: async () => countableLesson,
+    rebuild: async () => {
+      rebuilds += 1
+      return countableLesson
+    },
+  })
+  assert.equal(rebuilds, 0)
+  assert.equal(feasibility.rebuildsAttempted, 0)
+  assert.equal(feasibility.verdict, 'ready')
+})
+
+await acheck('a shortage makes the lesson rebuild, not just get flagged', async () => {
+  let rebuilds = 0
+  const { feasibility } = await buildLessonWithRebuilds(shortForm, {
+    generate: async () => countableLesson,
+    rebuild: async (current) => {
+      rebuilds += 1
+      return {
+        ...current,
+        activities: current.activities.map((activity) => ({
+          ...activity,
+          materials: activity.materials.map((material) =>
+            material.name === 'bottle tops'
+              ? { ...material, quantityNeeded: '32' }
+              : material,
+          ),
+        })),
+      }
+    },
+  })
+  assert.equal(rebuilds, 1)
+  assert.equal(feasibility.rebuildsAttempted, 1)
+  assert.equal(feasibility.verdict, 'ready')
+})
+
+await acheck('the loop stops after two rebuilds', async () => {
+  let rebuilds = 0
+  const { feasibility } = await buildLessonWithRebuilds(shortForm, {
+    generate: async () => countableLesson,
+    rebuild: async (current) => {
+      rebuilds += 1
+      return current
+    },
+  })
+  assert.equal(rebuilds, MAX_REBUILDS)
+  assert.equal(rebuilds, 2)
+  assert.equal(feasibility.rebuildsAttempted, 2)
+})
+
+await acheck('a shortage that survives the rebuilds comes back named, not passed', async () => {
+  const { feasibility } = await buildLessonWithRebuilds(shortForm, {
+    generate: async () => countableLesson,
+    rebuild: async (current) => current,
+  })
+  assert.equal(feasibility.verdict, 'attention')
+  const row = feasibility.checks.materials.find((r) => r.name === 'bottle tops')
+  assert.equal(row.status, 'short')
+  assert.equal(row.shortBy, 8)
+  assert.match(row.detail, /Short by 8 bottle tops/)
+})
+
+await acheck('a count the teacher could not give is not worth rebuilding', async () => {
+  let rebuilds = 0
+  const { feasibility } = await buildLessonWithRebuilds(exampleForm, {
+    generate: async () => exampleLesson,
+    rebuild: async () => {
+      rebuilds += 1
+      return exampleLesson
+    },
+  })
+  assert.equal(rebuilds, 0)
+  assert.equal(feasibility.rebuildsAttempted, 0)
+  assert.equal(feasibility.verdict, 'attention')
+})
+
+await acheck('a rebuild that fails does not take the lesson down', async () => {
+  const { lesson, feasibility } = await buildLessonWithRebuilds(shortForm, {
+    generate: async () => countableLesson,
+    rebuild: async () => {
+      throw new Error('the AI is down')
+    },
+  })
+  assert.equal(feasibility.rebuildsAttempted, 1)
+  assert.equal(feasibility.verdict, 'attention')
+  assert.equal(lesson.title, countableLesson.title)
 })
 
 console.log(`\n${passed} passed, ${failures.length} failed`)

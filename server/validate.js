@@ -36,10 +36,19 @@ const STOP_WORDS = new Set([
   'learner', 'pupils', 'pupil', 'lesson', 'using', 'into', 'about',
 ])
 
+// Words are compared on their first four letters, so "comparing" and
+// "compare" are the same word and "understanding" and "understand" are too.
+// Without this, a teacher gets told their lesson needs attention because
+// the AI described the objective instead of quoting it.
+function matchingKey(word) {
+  return word.length > 4 ? word.slice(0, 4) : word
+}
+
 function significantWords(value) {
   return normaliseText(value)
     .split(' ')
     .filter((word) => word.length > 3 && !STOP_WORDS.has(word))
+    .map(matchingKey)
 }
 
 // "a bag", "two measuring cups", "40" — anything that is not a plain number
@@ -227,8 +236,8 @@ function objectivesMatch(declared, stated) {
   if (a === b) return true
   if (a.includes(b) || b.includes(a)) return true
 
-  const wordsA = significantWords(a)
-  const wordsB = significantWords(b)
+  const wordsA = [...new Set(significantWords(a))]
+  const wordsB = [...new Set(significantWords(b))]
   if (!wordsA.length || !wordsB.length) return false
 
   const shared = wordsA.filter((word) => wordsB.includes(word)).length

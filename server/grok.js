@@ -241,8 +241,8 @@ HOW TO PLAN
    short understanding check — how the teacher knows the pupils got it.
 6. Every activity says which objective it serves, in the teacher's words.
 7. The assessment is one short task pupils do alone. It must genuinely test
-   the learning objective. State in servesObjective exactly which objective
-   it tests.
+   the learning objective. In servesObjective, copy the objective text itself
+   — the teacher's own words, not a description of what the pupils will do.
 8. adaptations: two or three sentences on how to stretch or support pupils
    who are finding it hard.
 9. curriculumConfidence is "aligned" only if this lesson genuinely addresses
@@ -253,8 +253,61 @@ Write like a competent colleague helping a teacher plan: plain, practical,
 no ceremony.`
 }
 
-function buildRepairPrompt(content, problem) {
-  return `The lesson you returned could not be used: ${problem}
+// The rebuild prompt: the shortfall spelled out, the inventory restated, and
+// a plain statement of what has to change.
+export function buildRebuildPrompt(lesson, form, gaps) {
+  const target =
+    form.durationMinutes === null || form.durationMinutes === undefined
+      ? 40
+      : form.durationMinutes
+
+  const gapsText = gaps
+    .map((gap) => {
+      if (gap.status === 'missing') {
+        return `- ${gap.name}: the lesson needs it and you do not have it.`
+      }
+      return `- ${gap.name}: the lesson needs ${gap.shortBy} more than you have.`
+    })
+    .join('\n')
+
+  const previous = (lesson.activities || [])
+    .map(
+      (activity) =>
+        `- ${activity.name} (${activity.durationMinutes} min): ${(
+          activity.materials || []
+        )
+          .map((material) => `${material.name} (${material.quantityNeeded})`)
+          .join(', ')}`,
+    )
+    .join('\n')
+
+  return `This lesson cannot be taught as it stands, because it asks for things the teacher does not have.
+
+WHAT IS MISSING
+${gapsText}
+
+WHAT THE TEACHER ACTUALLY HAS
+${describeMaterials(form.materials)}
+
+THE LESSON YOU WROTE BEFORE
+${previous}
+
+WHAT TO DO
+1. Write a new lesson for the same topic and the same learning objective, built
+   only from the materials the teacher actually has. If an activity needed
+   something they do not have, plan a different activity that does not.
+2. Never ask for more of a material than the list above allows. If the teacher
+   has 40 bottle tops, the lesson may use 40 bottle tops at once, not 41.
+3. The activity timings must add up to EXACTLY ${target} minutes.
+4. Keep the teaching quality: the same objective, the same understanding
+   checks, the same honesty about what the assessment tests. In servesObjective,
+   copy the objective text itself — the teacher's own words, not a description
+   of what the pupils will do.
+5. Return the whole lesson again, in the same format, not just the changed
+   parts.`
+}
+
+function buildRepairPrompt(content, problem) {  return `The lesson you returned could not be used: ${problem}
 
 Here is what you returned:
 ${content}
@@ -314,6 +367,34 @@ export async function generateLesson(form) {
         'You write classroom lessons that use only the materials a teacher has confirmed they own. You reply with JSON only.',
     },
     { role: 'user', content: prompt },
+  ]
+
+  const content = await askGroq(messages, LESSON_SCHEMA)
+
+  try {
+    return parseLesson(content)
+  } catch (firstProblem) {
+    const repaired = await askGroq(
+      [
+        messages[0],
+        { role: 'user', content: buildRepairPrompt(content, firstProblem.message) },
+      ],
+      LESSON_SCHEMA,
+    )
+    return parseLesson(repaired)
+  }
+}
+
+// Rebuild the lesson around what the teacher actually has. The checker has
+// already said what is missing, so the model does not have to guess.
+export async function rebuildLesson(lesson, form, gaps) {
+  const messages = [
+    {
+      role: 'system',
+      content:
+        'You write classroom lessons that use only the materials a teacher has confirmed they own. You reply with JSON only.',
+    },
+    { role: 'user', content: buildRebuildPrompt(lesson, form, gaps) },
   ]
 
   const content = await askGroq(messages, LESSON_SCHEMA)

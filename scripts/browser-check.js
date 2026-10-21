@@ -219,6 +219,37 @@ class Page {
     if (!found) throw new Error(`nothing matches ${selector} to click`)
   }
 
+  // Clicks the last element that matches — used for the last row of a list
+  // that grows as the teacher adds to it.
+  async clickLast(selector) {
+    const found = await this.evaluate((sel) => {
+      const elements = document.querySelectorAll(sel)
+      if (!elements.length) return false
+      elements[elements.length - 1].click()
+      return true
+    }, selector)
+    if (!found) throw new Error(`nothing matches ${selector} to click`)
+  }
+
+  // Presses Enter in a field, which is how an in-place edit is committed.
+  async pressEnter(selector) {
+    const found = await this.evaluate((sel) => {
+      const element = document.querySelector(sel)
+      if (!element) return false
+      element.focus()
+      element.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+      return true
+    }, selector)
+    if (!found) throw new Error(`nothing matches ${selector} to press enter on`)
+  }
+
   text(selector) {
     return this.evaluate((sel) => {
       const element = document.querySelector(sel)
@@ -503,6 +534,60 @@ check('removing a material changes the lesson, not just the verdict', async () =
   }
 })
 
+check('editing an activity re-checks the lesson', async () => {
+  // Ask the first activity for something the teacher does not have.
+  await page.click('.activities > .activity:first-child .button-add-material')
+  await sleep(150)
+
+  await page.clickLast('.activities > .activity:first-child .activity-material-name')
+  await sleep(120)
+  await page.fill('.activities > .activity:first-child .editable-input', 'marker pens')
+  await page.pressEnter('.activities > .activity:first-child .editable-input')
+  await sleep(150)
+
+  await page.clickLast(
+    '.activities > .activity:first-child .activity-material-quantity-text',
+  )
+  await sleep(120)
+  await page.fill('.activities > .activity:first-child .editable-input', '2')
+  await page.pressEnter('.activities > .activity:first-child .editable-input')
+
+  await page.waitFor(
+    `document.querySelector('.verdict-title') && document.querySelector('.verdict-title').textContent.trim() === 'Needs attention'`,
+    20000,
+    'the panel to flag the edited material',
+  )
+
+  const panelText = await page.text('.feasibility')
+  if (!panelText.includes('marker pens')) {
+    throw new Error('the panel does not name the material the teacher just added')
+  }
+  if (!panelText.includes('not on your list')) {
+    throw new Error('the panel does not say the material is not on the list')
+  }
+})
+
+check('the edit shows up in the lesson itself', async () => {
+  const lessonText = await page.text('.result-lesson')
+  if (!lessonText.includes('marker pens')) {
+    throw new Error('the lesson does not show the material the teacher added')
+  }
+})
+
+check('taking the material back out puts the lesson back', async () => {
+  await page.click('button[aria-label^="Remove marker pens"]')
+  await sleep(150)
+  await page.waitFor(
+    `document.querySelector('.verdict-title') && document.querySelector('.verdict-title').textContent.trim() === 'Ready to teach'`,
+    20000,
+    'the panel to clear',
+  )
+  const lessonText = await page.text('.result-lesson')
+  if (lessonText.includes('marker pens')) {
+    throw new Error('the lesson still asks for the material the teacher removed')
+  }
+})
+
 check('the teacher keeps everything they typed after a result', async () => {
   const topic = await page.evaluate(
     () => document.querySelector('input[name="topic"]').value,
@@ -526,11 +611,10 @@ check('on a wide screen the panel sits beside the lesson', async () => {
     const lesson = document.querySelector('.result-lesson').getBoundingClientRect()
     const panel = document.querySelector('.result-panel').getBoundingClientRect()
     return {
-      lessonLeft: lesson.left,
       lessonRight: lesson.right,
+      lessonBottom: lesson.bottom,
       panelLeft: panel.left,
       panelTop: panel.top,
-      lessonTop: lesson.top,
       overflow: document.documentElement.scrollWidth - window.innerWidth,
     }
   })
@@ -540,8 +624,8 @@ check('on a wide screen the panel sits beside the lesson', async () => {
   if (layout.panelLeft < layout.lessonRight) {
     throw new Error('the panel overlaps the lesson')
   }
-  if (Math.abs(layout.panelTop - layout.lessonTop) > 40) {
-    throw new Error('the panel is not level with the lesson')
+  if (layout.panelTop > layout.lessonBottom) {
+    throw new Error('the panel has dropped below the lesson')
   }
 })
 

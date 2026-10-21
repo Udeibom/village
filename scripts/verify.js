@@ -8,6 +8,7 @@ import { canGenerate, emptyForm, normalizeForm, toNumberOrNull } from '../src/li
 import { checkLesson, shortfalls, parseQuantity, objectivesMatch } from '../server/validate.js'
 import { validateLessonShape } from '../server/grok.js'
 import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
+import { runCheck } from '../server/check.js'
 import {
   exampleLesson,
   exampleInventory,
@@ -520,6 +521,61 @@ await acheck('a rebuild that fails does not take the lesson down', async () => {
   assert.equal(feasibility.rebuildsAttempted, 1)
   assert.equal(feasibility.verdict, 'attention')
   assert.equal(lesson.title, countableLesson.title)
+})
+
+section('Re-checking an edited lesson')
+check('an edited lesson is checked, not written again', () => {
+  const result = runCheck({ lesson: countableLesson, form: countableForm })
+  assert.equal(result.feasibility.verdict, 'ready')
+  assert.deepEqual(Object.keys(result), ['feasibility'])
+})
+check('an edit that asks for something the teacher does not have is caught', () => {
+  const edited = {
+    ...countableLesson,
+    activities: countableLesson.activities.map((activity, index) =>
+      index === 0
+        ? {
+            ...activity,
+            materials: [
+              ...activity.materials,
+              { name: 'marker pens', quantityNeeded: '2' },
+            ],
+          }
+        : activity,
+    ),
+  }
+  const result = runCheck({ lesson: edited, form: countableForm })
+  assert.equal(result.feasibility.verdict, 'attention')
+  const row = result.feasibility.checks.materials.find(
+    (r) => r.name === 'marker pens',
+  )
+  assert.equal(row.status, 'missing')
+  assert.match(row.detail, /not on your list/)
+})
+check('an edit that asks for more than the teacher has is caught', () => {
+  const edited = {
+    ...countableLesson,
+    activities: countableLesson.activities.map((activity, index) =>
+      index === 0
+        ? {
+            ...activity,
+            materials: activity.materials.map((material) =>
+              material.name === 'bottle tops'
+                ? { ...material, quantityNeeded: '400' }
+                : material,
+            ),
+          }
+        : activity,
+    ),
+  }
+  const result = runCheck({ lesson: edited, form: countableForm })
+  assert.equal(result.feasibility.verdict, 'attention')
+  const row = result.feasibility.checks.materials.find((r) => r.name === 'bottle tops')
+  assert.equal(row.status, 'short')
+  assert.equal(row.shortBy, 360)
+})
+check('a request with no lesson at all is refused', () => {
+  assert.throws(() => runCheck({ form: countableForm }), /no lesson to check/)
 })
 
 console.log(`\n${passed} passed, ${failures.length} failed`)

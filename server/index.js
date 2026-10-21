@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import { generateLesson, rebuildLesson } from './grok.js'
 import { buildLessonWithRebuilds } from './rebuild.js'
+import { runCheck } from './check.js'
 import { stubLesson, stubRebuild } from './stub.js'
 import { normalizeForm } from '../src/lib/formRules.js'
 
@@ -48,6 +49,18 @@ app.post('/api/generate', async (req, res) => {
   } catch (error) {
     console.error('generate failed:', error && error.message)
     res.status(502).json({ error: friendlyError(error) })
+  }
+})
+
+// The teacher edited the lesson. Check it again — do not write a new one.
+app.post('/api/check', (req, res) => {
+  try {
+    res.json(runCheck(req.body || {}))
+  } catch (error) {
+    console.error('check failed:', error && error.message)
+    res.status(400).json({
+      error: "Village could not check that lesson. Try again in a moment.",
+    })
   }
 })
 

@@ -482,6 +482,63 @@ textarea::placeholder {
   color: var(--ink-soft);
 }
 
+/* --- editable lesson text -------------------------------------------- */
+
+.editable {
+  display: inline-block;
+  border-bottom: 1px dotted transparent;
+  border-radius: 2px;
+  cursor: text;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.editable:hover,
+.editable:focus-visible {
+  background: var(--paper-sunk);
+  border-bottom-color: var(--rule);
+  outline: none;
+}
+
+.activity-instructions .editable,
+.activity-check-text.editable {
+  display: block;
+}
+
+.editable-input {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: var(--paper-raised);
+  border: 1px solid var(--clay);
+  border-radius: 3px;
+  padding: 0.35rem 0.45rem;
+  resize: vertical;
+}
+
+.activity-materials-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.activity-materials-edit .activity-materials {
+  width: 100%;
+}
+
+.activity-materials li .button-remove {
+  font-size: 0.78rem;
+  padding: 0.1rem 0.35rem;
+}
+
+.checking-line {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
 .check {
   margin-bottom: 1.1rem;
 }

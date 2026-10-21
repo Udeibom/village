@@ -37,7 +37,7 @@ function Check({ title, status, children }) {
   )
 }
 
-export default function FeasibilityPanel({ feasibility }) {
+export default function FeasibilityPanel({ feasibility, checking = false }) {
   if (!feasibility) return null
 
   const { verdict, checks } = feasibility
@@ -55,12 +55,18 @@ export default function FeasibilityPanel({ feasibility }) {
           <h2 id="feasibility-heading" className="verdict-title">
             {ready ? 'Ready to teach' : 'Needs attention'}
           </h2>
-          <p className="verdict-text">
-            {ready
-              ? "Village checked this lesson against what you said you have, and everything lines up."
-              : 'Village found something to sort out before you teach this. The details are below.'}
-          </p>
-        </div>
+      <p className="verdict-text">
+        {ready
+          ? "Village checked this lesson against what you said you have, and everything lines up."
+          : 'Village found something to sort out before you teach this. The details are below.'}
+      </p>
+      </div>
+
+      {checking && (
+        <p className="checking-line" role="status">
+          Checking what you changed…
+        </p>
+      )}
       </div>
 
       {rebuilds > 0 && (

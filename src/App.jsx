@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import LessonRequestForm from './components/LessonRequestForm.jsx'
 import RealityForm from './components/RealityForm.jsx'
 import MaterialsList from './components/MaterialsList.jsx'
 import LessonPlan from './components/LessonPlan.jsx'
 import FeasibilityPanel from './components/FeasibilityPanel.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
-import { generateLesson } from './api.js'
+import { generateLesson, checkLesson } from './api.js'
 
 export default function App() {
   const [form, setForm] = useState(emptyForm)
@@ -13,6 +13,9 @@ export default function App() {
   const [error, setError] = useState('')
   const [lesson, setLesson] = useState(null)
   const [feasibility, setFeasibility] = useState(null)
+  const [checking, setChecking] = useState(false)
+  const checkNumber = useRef(0)
+
   const handleChange = (field, value) => {
     setForm((current) => {
       const next = { ...current, [field]: value }
@@ -38,6 +41,32 @@ export default function App() {
       setStatus('error')
     }
   }
+
+  // The teacher edited the lesson, or changed something the lesson is checked
+  // against. The checker looks again — the lesson is never taken on trust.
+  const runCheck = async (nextLesson, nextForm) => {
+    const number = ++checkNumber.current
+    setChecking(true)
+    try {
+      const result = await checkLesson({ lesson: nextLesson, form: nextForm })
+      if (number === checkNumber.current) setFeasibility(result.feasibility)
+    } catch (failure) {
+      if (number === checkNumber.current) setError(failure.message)
+    } finally {
+      if (number === checkNumber.current) setChecking(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!lesson) return undefined
+
+    const timer = setTimeout(() => {
+      runCheck(lesson, form)
+    }, 350)
+
+    return () => clearTimeout(timer)
+    // The lesson itself, and the inputs the checks are made against.
+  }, [lesson, form.materials, form.classSize, form.durationMinutes, form.learningObjective, form.curriculumObjective])
 
   const ready = canGenerate(form)
 
@@ -93,10 +122,10 @@ export default function App() {
         {lesson && (
           <section className="result" aria-label="Lesson and feasibility">
             <div className="result-lesson">
-              <LessonPlan lesson={lesson} />
+              <LessonPlan lesson={lesson} onEdit={setLesson} />
             </div>
             <div className="result-panel">
-              <FeasibilityPanel feasibility={feasibility} />
+              <FeasibilityPanel feasibility={feasibility} checking={checking} />
             </div>
           </section>
         )}

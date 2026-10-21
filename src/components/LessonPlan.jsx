@@ -1,25 +1,148 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
-function MaterialList({ materials }) {
-  if (!materials || materials.length === 0) {
-    return <p className="activity-materials-empty">No materials needed.</p>
+// Text the teacher can change in place. Click it, type, press Enter (or click
+// away) and the lesson is re-checked. Escape throws the change away.
+function EditableText({ value, onCommit, label, className, multiline = false }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+
+  useEffect(() => {
+    if (!editing) setDraft(value)
+  }, [value, editing])
+
+  const commit = () => {
+    setEditing(false)
+    const next = draft.trim()
+    if (next !== value) onCommit(next)
   }
+
+  const cancel = () => {
+    setDraft(value)
+    setEditing(false)
+  }
+
+  if (editing) {
+    const shared = {
+      className: `editable-input ${className || ''}`,
+      value: draft,
+      autoFocus: true,
+      onChange: (event) => setDraft(event.target.value),
+      onBlur: commit,
+      onKeyDown: (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          cancel()
+        }
+        if (event.key === 'Enter' && !multiline) {
+          event.preventDefault()
+          commit()
+        }
+      },
+    }
+
+    return multiline ? <textarea {...shared} rows={3} /> : <input {...shared} />
+  }
+
   return (
-    <ul className="activity-materials">
-      {materials.map((material, index) => (
-        <li key={`${material.name}-${index}`}>
-          <span className="activity-material-name">{material.name}</span>
-          <span className="activity-material-quantity">
-            {material.quantityNeeded}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <span
+      className={`editable ${className || ''}`}
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      title="Click to change this"
+      onClick={() => setEditing(true)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          setEditing(true)
+        }
+      }}
+    >
+      {value}
+    </span>
   )
 }
 
-export default function LessonPlan({ lesson }) {
+// The materials one activity needs — the teacher can add to the list, take
+// something out of it, or correct a quantity. Any change re-checks the
+// lesson, so a lesson cannot quietly keep asking for something the teacher
+// has taken out of the room.
+function ActivityMaterials({ activity, onChange }) {
+  const materials = activity.materials || []
+
+  const update = (index, changes) => {
+    onChange(
+      materials.map((material, i) =>
+        i === index ? { ...material, ...changes } : material,
+      ),
+    )
+  }
+
+  const remove = (index) => {
+    onChange(materials.filter((_, i) => i !== index))
+  }
+
+  const add = () => {
+    onChange([...materials, { name: '', quantityNeeded: '' }])
+  }
+
+  return (
+    <div className="activity-materials-edit">
+      {materials.length === 0 ? (
+        <p className="activity-materials-empty">No materials needed.</p>
+      ) : (
+        <ul className="activity-materials">
+          {materials.map((material, index) => (
+            <li key={`${material.name}-${index}`}>
+              <EditableText
+                className="activity-material-name"
+                label={`Material name in ${activity.name}`}
+                value={material.name}
+                onCommit={(name) => update(index, { name })}
+              />
+              <span className="activity-material-quantity">
+                <EditableText
+                  className="activity-material-quantity-text"
+                  label={`Quantity for ${material.name || 'this material'}`}
+                  value={material.quantityNeeded}
+                  onCommit={(quantityNeeded) => update(index, { quantityNeeded })}
+                />
+              </span>
+              <button
+                type="button"
+                className="button-quiet button-remove"
+                aria-label={`Remove ${material.name || 'material'} from ${activity.name}`}
+                onClick={() => remove(index)}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <button
+        type="button"
+        className="button-quiet button-add-material"
+        onClick={add}
+      >
+        Add material to this activity
+      </button>
+    </div>
+  )
+}
+
+export default function LessonPlan({ lesson, onEdit }) {
   if (!lesson) return null
+
+  const updateActivity = (index, changes) => {
+    onEdit({
+      ...lesson,
+      activities: lesson.activities.map((activity, i) =>
+        i === index ? { ...activity, ...changes } : activity,
+      ),
+    })
+  }
 
   return (
     <article className="lesson">
@@ -30,23 +153,52 @@ export default function LessonPlan({ lesson }) {
         {(lesson.activities || []).map((activity, index) => (
           <li key={`${activity.name}-${index}`} className="activity">
             <div className="activity-head">
-              <h3 className="activity-name">{activity.name}</h3>
+              <h3 className="activity-name">
+                <EditableText
+                  label={`Name of activity ${index + 1}`}
+                  value={activity.name}
+                  onCommit={(name) => updateActivity(index, { name })}
+                />
+              </h3>
               <span className="activity-duration">
                 {activity.durationMinutes} min
               </span>
             </div>
 
-            <p className="activity-instructions">{activity.instructions}</p>
+            <p className="activity-instructions">
+              <EditableText
+                className="activity-instructions-text"
+                label={`Instructions for ${activity.name}`}
+                value={activity.instructions}
+                multiline
+                onCommit={(instructions) =>
+                  updateActivity(index, { instructions })
+                }
+              />
+            </p>
 
             <div className="activity-meta">
               <div className="activity-block">
                 <h4>Materials</h4>
-                <MaterialList materials={activity.materials} />
+                <ActivityMaterials
+                  activity={activity}
+                  onChange={(materials) => updateActivity(index, { materials })}
+                />
               </div>
 
               <div className="activity-block">
                 <h4>How you'll know they got it</h4>
-                <p>{activity.understandingCheck}</p>
+                <p>
+                  <EditableText
+                    className="activity-check-text"
+                    label={`Understanding check for ${activity.name}`}
+                    value={activity.understandingCheck}
+                    multiline
+                    onCommit={(understandingCheck) =>
+                      updateActivity(index, { understandingCheck })
+                    }
+                  />
+                </p>
               </div>
 
               <div className="activity-block">

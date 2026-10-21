@@ -10,6 +10,12 @@ function EditableText({ value, onCommit, label, className, multiline = false }) 
     if (!editing) setDraft(value)
   }, [value, editing])
 
+  // Without a commit handler there is nothing to edit — the print view
+  // shows the lesson, not a form.
+  if (!onCommit) {
+    return <span className={`editable-readonly ${className || ''}`}>{value}</span>
+  }
+
   const commit = () => {
     setEditing(false)
     const next = draft.trim()
@@ -98,36 +104,42 @@ function ActivityMaterials({ activity, onChange }) {
                 className="activity-material-name"
                 label={`Material name in ${activity.name}`}
                 value={material.name}
-                onCommit={(name) => update(index, { name })}
+                onCommit={onChange ? (name) => update(index, { name }) : undefined}
               />
               <span className="activity-material-quantity">
                 <EditableText
                   className="activity-material-quantity-text"
                   label={`Quantity for ${material.name || 'this material'}`}
                   value={material.quantityNeeded}
-                  onCommit={(quantityNeeded) => update(index, { quantityNeeded })}
+                  onCommit={
+                    onChange ? (quantityNeeded) => update(index, { quantityNeeded }) : undefined
+                  }
                 />
               </span>
-              <button
-                type="button"
-                className="button-quiet button-remove"
-                aria-label={`Remove ${material.name || 'material'} from ${activity.name}`}
-                onClick={() => remove(index)}
-              >
-                Remove
-              </button>
+              {onChange && (
+                <button
+                  type="button"
+                  className="button-quiet button-remove"
+                  aria-label={`Remove ${material.name || 'material'} from ${activity.name}`}
+                  onClick={() => remove(index)}
+                >
+                  Remove
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      <button
-        type="button"
-        className="button-quiet button-add-material"
-        onClick={add}
-      >
-        Add material to this activity
-      </button>
+      {onChange && (
+        <button
+          type="button"
+          className="button-quiet button-add-material"
+          onClick={add}
+        >
+          Add material to this activity
+        </button>
+      )}
     </div>
   )
 }
@@ -157,7 +169,7 @@ export default function LessonPlan({ lesson, onEdit }) {
                 <EditableText
                   label={`Name of activity ${index + 1}`}
                   value={activity.name}
-                  onCommit={(name) => updateActivity(index, { name })}
+                  onCommit={onEdit ? (name) => updateActivity(index, { name }) : undefined}
                 />
               </h3>
               <span className="activity-duration">
@@ -171,8 +183,8 @@ export default function LessonPlan({ lesson, onEdit }) {
                 label={`Instructions for ${activity.name}`}
                 value={activity.instructions}
                 multiline
-                onCommit={(instructions) =>
-                  updateActivity(index, { instructions })
+                onCommit={
+                  onEdit ? (instructions) => updateActivity(index, { instructions }) : undefined
                 }
               />
             </p>
@@ -182,7 +194,11 @@ export default function LessonPlan({ lesson, onEdit }) {
                 <h4>Materials</h4>
                 <ActivityMaterials
                   activity={activity}
-                  onChange={(materials) => updateActivity(index, { materials })}
+                  onChange={
+                    onEdit
+                      ? (materials) => updateActivity(index, { materials })
+                      : undefined
+                  }
                 />
               </div>
 
@@ -194,8 +210,11 @@ export default function LessonPlan({ lesson, onEdit }) {
                     label={`Understanding check for ${activity.name}`}
                     value={activity.understandingCheck}
                     multiline
-                    onCommit={(understandingCheck) =>
-                      updateActivity(index, { understandingCheck })
+                    onCommit={
+                      onEdit
+                        ? (understandingCheck) =>
+                            updateActivity(index, { understandingCheck })
+                        : undefined
                     }
                   />
                 </p>

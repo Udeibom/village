@@ -4,6 +4,7 @@ import RealityForm from './components/RealityForm.jsx'
 import MaterialsList from './components/MaterialsList.jsx'
 import LessonPlan from './components/LessonPlan.jsx'
 import FeasibilityPanel from './components/FeasibilityPanel.jsx'
+import PrintView from './components/PrintView.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
 import { generateLesson, checkLesson } from './api.js'
 
@@ -14,6 +15,7 @@ export default function App() {
   const [lesson, setLesson] = useState(null)
   const [feasibility, setFeasibility] = useState(null)
   const [checking, setChecking] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const checkNumber = useRef(0)
 
   const handleChange = (field, value) => {
@@ -70,6 +72,20 @@ export default function App() {
 
   const ready = canGenerate(form)
 
+  if (printing) {
+    return (
+      <div className="page page-print">
+        <main className="sheet">
+          <PrintView
+            lesson={lesson}
+            feasibility={feasibility}
+            onBack={() => setPrinting(false)}
+          />
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <header className="masthead">
@@ -98,6 +114,14 @@ export default function App() {
             disabled={!ready || status === 'building'}
           >
             {status === 'building' ? 'Building your lesson…' : 'Generate lesson'}
+          </button>
+          <button
+            type="button"
+            className="button-quiet button-print"
+            onClick={() => setPrinting(true)}
+            disabled={!lesson}
+          >
+            Print / Export
           </button>
           {!ready && (
             <p className="action-hint">

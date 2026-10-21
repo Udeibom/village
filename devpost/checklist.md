@@ -49,7 +49,7 @@ Build mode: fast
   Learner check: Change an activity's instruction to mention something you don't own (a marker pen, say) and watch the panel react — then change it back and watch it clear.
   Commit: `Re-check the lesson after teacher edits`
 
-- [ ] **5. The teacher can print or export the lesson**
+- [x] **5. The teacher can print or export the lesson**
   Becomes usable: A clean printable page — lesson and feasibility panel together, no app chrome — for the teacher to carry into the classroom, plus a README another person can follow to run it.
   Why now: It is the last step of the core journey (hand the plan to the class), it needs the finished lesson shape to look right, and it is what the demo recording will show.
   PRD ref: `prd.md > Export`, `prd.md > The Core Journey` (step 8)
@@ -102,3 +102,6 @@ Activity mode:
 - Re-checking deliberately does not rewrite the lesson. Changing the inventory re-checks — a local, instant check that names the gap — and writing a new lesson stays behind the Generate button. The PRD's money shot still works, but the teacher is never surprised by a slow API call they did not ask for, and the "delete a material, re-check, watch the lesson change" line is satisfied by the teacher pressing Generate, which is the same button that always wrote the lesson.
 - Activity duration is not editable in place. The slice is about the activity's text, and a number field that quietly changes the timing check is a different kind of control from a sentence the teacher rewrites.
 - The feasibility panel is sticky, so it follows the teacher down the page instead of scrolling away. The browser check therefore asserts that the panel sits *beside* the lesson on a wide screen and *below* it on a narrow one, and not that the two are level with each other — a sticky panel cannot promise that, and a check that did would fail for the right behaviour.
+- "Print / Export" opens a page of its own — the lesson and the verdict, no form, no buttons — rather than opening the browser's print dialog straight away. The dialog is a dead end the teacher cannot see the state of, and some browsers do not even offer it. The page has a Print button that calls it, and a Back button that returns to the lesson with every edit still in place.
+- The print stylesheet is not decoration. It is what makes printing from the ordinary screen work too: `@media print` hides the form and the app furniture and keeps the lesson and the panel, so a teacher who presses Ctrl+P without opening the print view still gets a page they can carry into the room. The browser check proves this by emulating print media and measuring what is still painted, rather than by opening a dialog a headless browser cannot show.
+- The print view renders the same lesson and the same panel components, with editing switched off, so the printed page cannot show a stale copy of the lesson and the panel cannot show a different verdict from the one on screen.

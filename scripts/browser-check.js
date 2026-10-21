@@ -164,6 +164,25 @@ class Page {
     await sleep(150)
   }
 
+  // Makes the page behave as if it is being printed, so the print
+  // stylesheet can be checked without opening a print dialog.
+  async emulateMedia(media) {
+    await this.send('Emulation.setEmulatedMedia', { media })
+    await sleep(150)
+  }
+
+  // Whether the element is on the page and actually painted.
+  async isVisible(selector) {
+    return this.evaluate((sel) => {
+      const element = document.querySelector(sel)
+      if (!element) return false
+      const style = window.getComputedStyle(element)
+      if (style.display === 'none' || style.visibility === 'hidden') return false
+      const box = element.getBoundingClientRect()
+      return box.width > 0 && box.height > 0
+    }, selector)
+  }
+
   async fill(selector, value) {
     const found = await this.evaluate(
       (sel, val) => {
@@ -603,6 +622,85 @@ check('the teacher keeps everything they typed after a result', async () => {
     return first ? first.value : null
   })
   if (name !== INVENTORY[0][0]) throw new Error(`the first material is now "${name}"`)
+})
+
+check('printing from the screen keeps the lesson and the panel, not the form', async () => {
+  await page.emulateMedia('print')
+
+  if (await page.isVisible('.card')) {
+    throw new Error('the form is still on the printed page')
+  }
+  if (!(await page.isVisible('.result-lesson'))) {
+    throw new Error('the lesson is missing from the printed page')
+  }
+  if (!(await page.isVisible('.feasibility'))) {
+    throw new Error('the feasibility panel is missing from the printed page')
+  }
+
+  await page.emulateMedia('screen')
+})
+
+check('the print view is a clean page of its own', async () => {
+  await page.click('.actions .button-print')
+
+  await page.waitForSelector('.print-view', 10000)
+  if (await page.isVisible('.card')) {
+    throw new Error('the form is still on the print page')
+  }
+  if (!(await page.isVisible('.print-view .result-lesson'))) {
+    throw new Error('the print page has no lesson')
+  }
+  if (!(await page.isVisible('.print-view .feasibility'))) {
+    throw new Error('the print page has no feasibility panel')
+  }
+
+  const printed = await page.text('.print-view .feasibility')
+  if (!printed.includes('Ready to teach')) {
+    throw new Error('the print page does not carry the verdict')
+  }
+  const honesty = await page.text('.print-view .honesty-line')
+  if (!honesty.includes('Illustrative draft')) {
+    throw new Error('the print page does not carry the honesty line')
+  }
+  const buttons = await page.text('.print-actions')
+  if (!buttons.includes('Print this page')) {
+    throw new Error('the print page has no way to print')
+  }
+
+  if (process.env.CHECK_PRINT_SCREENSHOT) {
+    await page.screenshot(process.env.CHECK_PRINT_SCREENSHOT)
+  }
+})
+
+check('the printed page leaves the buttons behind', async () => {
+  await page.emulateMedia('print')
+
+  if (await page.isVisible('.print-actions')) {
+    throw new Error('the print buttons are still on the printed page')
+  }
+  if (!(await page.isVisible('.print-view .result-lesson'))) {
+    throw new Error('the lesson is missing from the printed page')
+  }
+  if (!(await page.isVisible('.print-view .feasibility'))) {
+    throw new Error('the feasibility panel is missing from the printed page')
+  }
+
+  if (process.env.CHECK_PRINT_SCREENSHOT) {
+    await page.screenshot(process.env.CHECK_PRINT_SCREENSHOT)
+  }
+
+  await page.emulateMedia('screen')
+})
+
+check('the teacher can go back to editing', async () => {
+  await page.click('.print-actions .button-quiet')
+  await page.waitForGone('.print-view', 10000)
+  if (!(await page.isVisible('.card'))) {
+    throw new Error('the form did not come back')
+  }
+  if (!(await page.isVisible('.result-lesson'))) {
+    throw new Error('the lesson did not come back')
+  }
 })
 
 check('on a wide screen the panel sits beside the lesson', async () => {

@@ -270,7 +270,292 @@ textarea::placeholder {
 
 .notice-text {
   margin: 0;
+  color: var(--ink);
+}
+
+/* --- result: lesson and feasibility ---------------------------------- */
+
+.result {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+
+.result-lesson {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1.6rem 1.75rem;
+  box-shadow: var(--shadow-card);
+}
+
+.lesson-title {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.lesson-intro {
+  margin: 0 0 1.4rem;
+  color: var(--ink-soft);
+}
+
+.activities {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.activity {
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 1rem;
+}
+
+.activity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.activity-name {
+  font-family: var(--font-heading);
+  font-size: 1.12rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.activity-duration {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.activity-instructions {
+  margin: 0.45rem 0 0.8rem;
+}
+
+.activity-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.9rem 1.4rem;
+}
+
+.activity-block h4 {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 0.3rem;
+}
+
+.activity-block p {
+  margin: 0;
+  font-size: 0.93rem;
+}
+
+.activity-materials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.93rem;
+}
+
+.activity-materials li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-bottom: 1px dotted var(--rule);
+  padding-bottom: 0.15rem;
+}
+
+.activity-material-quantity {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.activity-materials-empty {
+  font-size: 0.93rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.lesson-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 1rem;
+}
+
+.lesson-section h3 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  margin: 0 0 0.4rem;
+}
+
+.lesson-section p {
+  margin: 0 0 0.4rem;
+}
+
+.lesson-trace {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.honesty-line {
+  margin: 1.5rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+/* --- feasibility panel ----------------------------------------------- */
+
+.result-panel {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.feasibility {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1.4rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.verdict {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--rule);
+  margin-bottom: 1.1rem;
+}
+
+.verdict-mark {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  flex: none;
+}
+
+.verdict-ready .verdict-mark {
+  color: var(--moss);
+}
+
+.verdict-attention .verdict-mark {
+  color: var(--clay);
+}
+
+.verdict-title {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.verdict-ready .verdict-title {
+  color: var(--moss);
+}
+
+.verdict-attention .verdict-title {
   color: var(--clay-deep);
+}
+
+.verdict-text {
+  margin: 0.25rem 0 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.check {
+  margin-bottom: 1.1rem;
+}
+
+.check-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.3rem;
+}
+
+.check-mark {
+  flex: none;
+  font-weight: 700;
+}
+
+.check .check-mark,
+.check-title .check-mark {
+  color: var(--moss);
+}
+
+.material-check-short .check-mark,
+.material-check-missing .check-mark,
+.check-fail .check-mark {
+  color: var(--clay);
+}
+
+.check-detail {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.material-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.material-check {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  font-size: 0.92rem;
+}
+
+.check-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.check-label {
+  font-weight: 600;
+}
+
+.material-check-short .check-label,
+.material-check-missing .check-label {
+  color: var(--clay-deep);
+}
+
+@media (max-width: 860px) {
+  .result {
+    grid-template-columns: 1fr;
+  }
+
+  .result-panel {
+    position: static;
+  }
 }
 
 @media (max-width: 560px) {

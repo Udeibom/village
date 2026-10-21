@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import LessonRequestForm from './components/LessonRequestForm.jsx'
 import RealityForm from './components/RealityForm.jsx'
 import MaterialsList from './components/MaterialsList.jsx'
+import LessonPlan from './components/LessonPlan.jsx'
+import FeasibilityPanel from './components/FeasibilityPanel.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
 import { generateLesson } from './api.js'
 
@@ -9,7 +11,8 @@ export default function App() {
   const [form, setForm] = useState(emptyForm)
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
-
+  const [lesson, setLesson] = useState(null)
+  const [feasibility, setFeasibility] = useState(null)
   const handleChange = (field, value) => {
     setForm((current) => {
       const next = { ...current, [field]: value }
@@ -26,7 +29,9 @@ export default function App() {
     setStatus('building')
     setError('')
     try {
-      await generateLesson(normalizeForm(form))
+      const result = await generateLesson(normalizeForm(form))
+      setLesson(result.lesson)
+      setFeasibility(result.feasibility)
       setStatus('idle')
     } catch (failure) {
       setError(failure.message)
@@ -83,6 +88,17 @@ export default function App() {
               Try again
             </button>
           </div>
+        )}
+
+        {lesson && (
+          <section className="result" aria-label="Lesson and feasibility">
+            <div className="result-lesson">
+              <LessonPlan lesson={lesson} />
+            </div>
+            <div className="result-panel">
+              <FeasibilityPanel feasibility={feasibility} />
+            </div>
+          </section>
         )}
       </main>
     </div>

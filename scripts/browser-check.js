@@ -5,15 +5,20 @@
 //
 //   npm run browser-check
 //
-// Starts the dev server itself if one is not already running, then stops it.
+// It starts its own server and web server on their own ports, with the AI
+// stubbed out, so a check never depends on the network, on the Groq key or on
+// a dev server you already have open. The real AI is exercised separately by
+// `npm run ai-check`.
 
 import { spawn } from 'node:child_process'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 
-const APP_URL = process.env.APP_URL || 'http://localhost:5173'
+const WEB_PORT = Number(process.env.CHECK_WEB_PORT || 5174)
+const API_PORT = Number(process.env.CHECK_API_PORT || 3011)
+const APP_URL = process.env.APP_URL || `http://localhost:${WEB_PORT}`
 const CHROME = process.env.CHROME_PATH || 'google-chrome'
 const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT || 9222)
 const TIMEOUT = Number(process.env.BROWSER_CHECK_TIMEOUT || 45000)
@@ -140,11 +145,54 @@ class Page {
     )
   }
 
+  async screenshot(path) {
+    const { data } = await this.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: true,
+    })
+    await writeFile(path, Buffer.from(data, 'base64'))
+    return path
+  }
+
+  async setViewport(width, height) {
+    await this.send('Emulation.setDeviceMetricsOverride', {
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: width < 500,
+    })
+    await sleep(150)
+  }
+
   async fill(selector, value) {
     const found = await this.evaluate(
       (sel, val) => {
         const element = document.querySelector(sel)
         if (!element) return false
+        const proto =
+          element.tagName === 'TEXTAREA'
+            ? HTMLTextAreaElement.prototype
+            : HTMLInputElement.prototype
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value').set
+        setter.call(element, val)
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+        return true
+      },
+      selector,
+      value,
+    )
+    if (!found) throw new Error(`nothing matches ${selector} to fill`)
+  }
+
+  // Fills the last element that matches — used for the last row of a list
+  // that grows as the teacher adds to it.
+  async fillLast(selector, value) {
+    const found = await this.evaluate(
+      (sel, val) => {
+        const elements = document.querySelectorAll(sel)
+        if (!elements.length) return false
+        const element = elements[elements.length - 1]
         const proto =
           element.tagName === 'TEXTAREA'
             ? HTMLTextAreaElement.prototype
@@ -212,11 +260,20 @@ async function startDevServer() {
   // Spawn the two processes directly rather than through `npm run dev`, so
   // that stopping them is a matter of killing two known pids instead of
   // signalling a whole process tree and hoping.
-  const server = spawn(process.execPath, ['server/index.js'], { stdio: 'ignore' })
+  const server = spawn(process.execPath, ['server/index.js'], {
+    stdio: 'ignore',
+    env: { ...process.env, PORT: String(API_PORT), VILLAGE_STUB: '1' },
+  })
   const web = spawn(
     process.execPath,
-    ['node_modules/vite/bin/vite.js', '--port', '5173', '--strictPort'],
-    { stdio: 'ignore' },
+    ['node_modules/vite/bin/vite.js', '--port', String(WEB_PORT), '--strictPort'],
+    {
+      stdio: 'ignore',
+      env: {
+        ...process.env,
+        VILLAGE_API_TARGET: `http://localhost:${API_PORT}`,
+      },
+    },
   )
   const children = [server, web]
 
@@ -320,6 +377,144 @@ check('removing the material disables Generate again', async () => {
   if (disabled !== true) throw new Error(`expected disabled, got ${disabled}`)
 })
 
+/* ------------------------------------------------------------ generating */
+
+const INVENTORY = [
+  ['bottle tops', '40'],
+  ['string', '5'],
+  ['measuring cups', '2'],
+  ['chalk', '1'],
+  ['blackboard', '1'],
+]
+
+async function addMaterial(name, quantity) {
+  await page.click('.materials-header button')
+  await page.fillLast('input[aria-label="Material name"]', name)
+  await page.fillLast('input[aria-label="Quantity"]', quantity)
+  await sleep(60)
+}
+
+check('a filled-in request can be generated', async () => {
+  await fillTheForm()
+  for (const [name, quantity] of INVENTORY) {
+    await addMaterial(name, quantity)
+  }
+  const disabled = await page.isDisabled('button.button-primary')
+  if (disabled !== false) throw new Error(`expected enabled, got disabled=${disabled}`)
+})
+
+check('the lesson appears after generating', async () => {
+  await page.click('button.button-primary')
+  await page.waitForSelector('.result-lesson .lesson-title', 20000)
+  const title = await page.text('.lesson-title')
+  if (!title) throw new Error('the lesson has no title')
+  if (!title.includes('ratios')) {
+    throw new Error(`the title does not mention the topic: "${title}"`)
+  }
+})
+
+check('the lesson shows its activities', async () => {
+  const activities = await page.count('.activity')
+  if (activities < 3) throw new Error(`expected at least 3 activities, got ${activities}`)
+  const durations = await page.evaluate(() =>
+    [...document.querySelectorAll('.activity-duration')].map((node) =>
+      Number(node.textContent.replace(/[^0-9]/g, '')),
+    ),
+  )
+  const total = durations.reduce((sum, minutes) => sum + minutes, 0)
+  if (total !== 35) throw new Error(`the activities add up to ${total} minutes, not 35`)
+})
+
+check('the feasibility panel gives a verdict', async () => {
+  const verdict = await page.text('.verdict-title')
+  if (!verdict) throw new Error('no verdict')
+  if (verdict !== 'Ready to teach') {
+    throw new Error(`expected "Ready to teach", got "${verdict}"`)
+  }
+})
+
+check('every material is checked against the inventory', async () => {
+  const rows = await page.count('.material-check')
+  if (rows !== INVENTORY.length) {
+    throw new Error(`expected ${INVENTORY.length} material rows, got ${rows}`)
+  }
+})
+
+check('a material with no count is not quietly called enough', async () => {
+  await page.fillLast('input[aria-label="Quantity"]', '')
+  await sleep(150)
+  await page.click('button.button-primary')
+  await page.waitForSelector('.verdict-title', 20000)
+  const verdict = await page.text('.verdict-title')
+  if (verdict !== 'Needs attention') {
+    throw new Error(`expected "Needs attention", got "${verdict}"`)
+  }
+  const unverified = await page.evaluate(() => {
+    const row = document.querySelector('.material-check-quantity-unverified')
+    return row ? row.innerText : null
+  })
+  if (!unverified) throw new Error('no unverified material row')
+  if (!unverified.includes('Quantity unverified')) {
+    throw new Error(`the row does not say the quantity is unverified: "${unverified}"`)
+  }
+})
+
+check('the teacher keeps everything they typed after a result', async () => {
+  const topic = await page.evaluate(
+    () => document.querySelector('input[name="topic"]').value,
+  )
+  if (topic !== FORM.topic) throw new Error(`the topic is now "${topic}"`)
+  const rows = await page.count('input[aria-label="Material name"]')
+  if (rows !== INVENTORY.length) {
+    throw new Error(`expected ${INVENTORY.length} material rows, got ${rows}`)
+  }
+})
+
+check('on a wide screen the panel sits beside the lesson', async () => {
+  await page.setViewport(1280, 900)
+  const layout = await page.evaluate(() => {
+    const lesson = document.querySelector('.result-lesson').getBoundingClientRect()
+    const panel = document.querySelector('.result-panel').getBoundingClientRect()
+    return {
+      lessonLeft: lesson.left,
+      lessonRight: lesson.right,
+      panelLeft: panel.left,
+      panelTop: panel.top,
+      lessonTop: lesson.top,
+      overflow: document.documentElement.scrollWidth - window.innerWidth,
+    }
+  })
+  if (layout.overflow > 1) {
+    throw new Error(`the page overflows sideways by ${layout.overflow}px`)
+  }
+  if (layout.panelLeft < layout.lessonRight) {
+    throw new Error('the panel overlaps the lesson')
+  }
+  if (Math.abs(layout.panelTop - layout.lessonTop) > 40) {
+    throw new Error('the panel is not level with the lesson')
+  }
+})
+
+check('on a narrow screen the panel drops below the lesson', async () => {
+  await page.setViewport(380, 800)
+  const layout = await page.evaluate(() => {
+    const lesson = document.querySelector('.result-lesson').getBoundingClientRect()
+    const panel = document.querySelector('.result-panel').getBoundingClientRect()
+    return {
+      panelTop: panel.top,
+      lessonBottom: lesson.bottom,
+      overflow: document.documentElement.scrollWidth - window.innerWidth,
+    }
+  })
+  if (layout.overflow > 1) {
+    throw new Error(`the page overflows sideways by ${layout.overflow}px`)
+  }
+  if (layout.panelTop < layout.lessonBottom) {
+    throw new Error('the panel overlaps the lesson on a narrow screen')
+  }
+  await page.setViewport(1280, 900)
+})
+
 check('the page raised no uncaught errors', () => {
   if (pageErrors.length > 0) {
     throw new Error(pageErrors.join(' | '))
@@ -333,10 +528,8 @@ let devServer = null
 let chrome = null
 let profile = null
 try {
-  if (!(await responds(APP_URL))) {
-    console.log('starting the dev server…')
-    devServer = await startDevServer()
-  }
+  console.log('starting the dev server…')
+  devServer = await startDevServer()
 
   profile = await mkdtemp(path.join(tmpdir(), 'village-chrome-'))
   chrome = spawn(
@@ -404,6 +597,11 @@ try {
 
   console.log(`\n${checks.length - failed} passed, ${failed} failed`)
   if (failed > 0) process.exitCode = 1
+
+  if (process.env.CHECK_SCREENSHOT) {
+    await page.screenshot(process.env.CHECK_SCREENSHOT)
+    console.log(`screenshot: ${process.env.CHECK_SCREENSHOT}`)
+  }
 } catch (error) {
   console.error(`\nbrowser check could not run: ${error.message}`)
   process.exitCode = 1

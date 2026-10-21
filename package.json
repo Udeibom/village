@@ -10,7 +10,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "verify": "node scripts/verify.js",
-    "browser-check": "node scripts/browser-check.js"
+    "browser-check": "node scripts/browser-check.js",
+    "ai-check": "node scripts/ai-check.js"
   },
   "dependencies": {
     "dotenv": "^18.0.8",

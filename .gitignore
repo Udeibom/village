@@ -1,0 +1,16 @@
+# Personal learning context stays out of commits by default
+/devpost/learner-profile.md
+
+# Local secrets — commit only a secret-free example
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Local agent tooling (not part of the Village app)
+/.agents/
+/agent/
+/.claude/
+/skills-lock.json

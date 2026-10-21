@@ -61,7 +61,7 @@ Build mode: fast
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 1: the teacher fills the real form and gives feedback on the paper-and-chalk look and the wording of the inputs, which shapes everything built on top of it (slice 1 built; awaiting the teacher's report)
+- [x] Early usable behavior explored — after slice 1: the teacher filled the real form and gave feedback on the paper-and-chalk look and the wording of the inputs. Outcome: field names confirmed as good for a teacher; the exercise-book styling was tried and rejected and reverted to the warm card layout, so the panel — not the page furniture — carries the paper-and-chalk character from here on
 - [ ] Core-journey checkpoint — after slice 3: the teacher runs the money shot in the browser (generate, then remove a material and re-check) and reports what they see
 - [ ] Final kick-the-tires exploration and feedback completed
 
@@ -88,3 +88,4 @@ Activity mode:
 - The stack versions moved forward with what npm now ships (React 19, Vite 8, Express 5, groq-sdk 1.6) instead of the versions the spec named (React 18, Express 4) — same libraries, same architecture, but the spec's pins were already a year out of date and would have needed overriding immediately.
 - `src/lib/formRules.js` was added to the spec's file structure so the rule that decides when Generate is enabled lives in one plain function, testable from `npm run verify` without a browser.
 - `scripts/browser-check.js` drives the running app in headless Chrome over the DevTools protocol (Node's built-in `WebSocket` and `fetch` only, no new dependencies) because "it looks right" is not verification — the build needs to assert on what a teacher would actually see.
+- The exercise-book treatment for the page (ruled lines, margin rule, desk surface, underline fields, serif italic labels) was tried and reverted — the learner judged the notebook metaphor as costume rather than meaning, and preferred the warm card-based form. The page keeps the card layout, earth tones, serif headings and humanist body text. The "chalk" half of the paper-and-chalk character is now expected to come from the feasibility panel, not from the page furniture.

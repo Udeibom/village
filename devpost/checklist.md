@@ -144,6 +144,15 @@ Edit outcome:
 Reflection:
 Activity mode:
 
+## Shipping
+
+- [x] Public repository created — `https://github.com/Udeibom/village`, public, default branch `main`, full build history, pushed with the learner's explicit authorisation after an audit of tracked files, the intended additions and the history (no API key, no `.env`, `devpost/learner-profile.md` ignored and never committed, the local machine path trimmed out of the handoff note). The URL was verified without authentication.
+- [x] Demo video recorded and published — 1:29, 1440×900, silent, at `https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4`, and committed at `demo/village-demo.mp4` with the recording script beside it. Recorded from the running local app on a private headless Chrome, so no part of the learner's own desktop is in it. Verified downloadable without a sign-in.
+- [x] Open-source licence added — MIT, at the repository root, confirmed detectable in the repository's About section.
+- [ ] Video uploaded to YouTube or Vimeo — the rules require the video to live on one of those and the link to be on the form, so the GitHub release link is a backup, not the submission. The learner has the file; the upload is theirs.
+- [ ] Submission copy written by the learner — project name, short description, the text description, the required explanation of how the Devpost Learn Skill Pack was used, and the exit survey.
+- [ ] Submitted on Devpost — deadline Oct 26, 2026, 5:00pm EDT.
+
 ## Revisions
 
 - The example-lesson button proposed in the first draft of the plan was removed — the learner asked for a real working app rather than a demo, so the product keeps a single path (Generate lesson → AI → checker) and the example lesson survives only as an internal test fixture for the checker.
@@ -173,3 +182,5 @@ Activity mode:
 - That live run also showed the honest edge of the checker: the model wrote "a handful of beans" where the teacher had written "a bag", and the checker refused to call that enough — "quantity-unverified" rather than a pass or a fail. A bag of beans may well be enough for thirty pupils, but Village cannot know that from the words on the screen, and saying so beats guessing in either direction.
 - The kernel moved out of `server/` and into `shared/`, because slice 12 needs the browser to run the same checker the server runs — `shared/validate.js` is imported by the server, by the browser and by `npm run verify`, so there is one kernel and no second copy to drift. Its two helpers moved with it: `shared/text.js` (word normalisation and the four-letter matching keys) and `shared/curriculum.js` (the search through the teacher's own document).
 - The curriculum document search was planned as `server/curriculum.js` and built as `shared/curriculum.js`, for the same reason: the checker calls it, and the checker now runs in the browser too.
+- The planning documents stay where the skills put them, in `devpost/`, and the README links to all five of them from the top of the page, because the hackathon asks for `scope.md`, `prd.md` and `spec.md` in the repository and a judge should find them without hunting.
+- The demo was recorded from the running app rather than screenshotted from a mock-up, and the recording was checked by reading the text out of the captured frames, so what the reviewer sees is what a teacher sees.

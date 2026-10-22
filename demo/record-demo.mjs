@@ -346,8 +346,11 @@ async function run() {
       downloadThroughput: 0,
       uploadThroughput: 0,
     })
-    await sleep(2500)
-    await evaluate(scrollTo('.masthead'))
+    // Wait for the app to notice, then put the top of the page in shot, so
+    // the note about the connection is actually on screen.
+    await waitFor(`!!document.querySelector('.offline-note')`, 'the offline note', 30000)
+    await sleep(1200)
+    await evaluate(`(() => { window.scrollTo(0, 0); return window.scrollY; })()`)
     await sleep(2500)
     await evaluate(scrollTo('.feasibility'))
     await sleep(3000)

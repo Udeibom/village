@@ -1,7 +1,7 @@
 # The demo video
 
-`village-demo.mp4` is the short recording of Village working: 2 minutes 1
-second, 1440×900, no narration.
+`village-demo.mp4` is the short recording of Village working: 1 minute 58
+seconds, 1440×900, no narration.
 
 Public download (no sign-in):
 <https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4>

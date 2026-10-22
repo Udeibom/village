@@ -6,10 +6,28 @@ import LessonPlan from './components/LessonPlan.jsx'
 import FeasibilityPanel from './components/FeasibilityPanel.jsx'
 import PrintView from './components/PrintView.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
+import {
+  browserStorage,
+  clearStore,
+  formFromShelf,
+  isEmptyShelf,
+  readStore,
+  shelfFromForm,
+  STORE_KEYS,
+  writeStore,
+} from './lib/store.js'
 import { generateLesson, checkLesson } from './api.js'
 
 export default function App() {
-  const [form, setForm] = useState(emptyForm)
+  // The shelf comes back before the first paint, so the teacher's own
+  // classroom is already here when they open the app.
+  const [form, setForm] = useState(() =>
+    formFromShelf(readStore(browserStorage(), STORE_KEYS.shelf)),
+  )
+  const [remembered, setRemembered] = useState(() => {
+    const stored = readStore(browserStorage(), STORE_KEYS.shelf)
+    return !isEmptyShelf(stored)
+  })
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
   const [lesson, setLesson] = useState(null)
@@ -18,8 +36,12 @@ export default function App() {
   const [rechecked, setRechecked] = useState(false)
   const [printing, setPrinting] = useState(false)
   const checkNumber = useRef(0)
+  // Nothing is written to the shelf until the teacher changes something, so
+  // an empty first visit does not overwrite what they had.
+  const touched = useRef(false)
 
   const handleChange = (field, value) => {
+    touched.current = true
     setForm((current) => {
       const next = { ...current, [field]: value }
       if (field === 'topic') next.learningObjective = value
@@ -28,7 +50,22 @@ export default function App() {
   }
 
   const handleMaterialsChange = (materials) => {
+    touched.current = true
     setForm((current) => ({ ...current, materials }))
+  }
+
+  // The shelf is saved on the teacher's own device, and nowhere else.
+  useEffect(() => {
+    if (!touched.current) return
+    writeStore(browserStorage(), STORE_KEYS.shelf, shelfFromForm(form))
+    setRemembered(true)
+  }, [form])
+
+  const forgetShelf = () => {
+    clearStore(browserStorage(), STORE_KEYS.shelf)
+    touched.current = false
+    setForm(emptyForm())
+    setRemembered(false)
   }
 
   const handleGenerate = async () => {
@@ -109,6 +146,20 @@ export default function App() {
             materials={form.materials}
             onChange={handleMaterialsChange}
           />
+          <p className="card-hint storage-note">
+            {remembered
+              ? 'Your classroom is kept on this device — it is not sent to any service, and it will be here next time you open Village.'
+              : 'Village keeps your classroom on this device, so it is still here next time. It is not sent to any service.'}
+          </p>
+          {remembered && (
+            <button
+              type="button"
+              className="button-quiet button-forget"
+              onClick={forgetShelf}
+            >
+              Forget this classroom
+            </button>
+          )}
         </section>
 
         <div className="actions">

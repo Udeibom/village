@@ -1,10 +1,5 @@
 import React from 'react'
-
-let nextRowId = 1
-
-export function newMaterialRow() {
-  return { id: `material-${nextRowId++}`, name: '', quantity: '' }
-}
+import { newMaterialRow } from '../lib/materialRows.js'
 
 export default function MaterialsList({ materials, onChange }) {
   const updateRow = (id, field, value) => {

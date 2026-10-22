@@ -10,6 +10,16 @@ import { validateLessonShape } from '../server/grok.js'
 import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
 import { runCheck } from '../server/check.js'
 import {
+  browserStorage,
+  clearStore,
+  formFromShelf,
+  isEmptyShelf,
+  readStore,
+  shelfFromForm,
+  STORE_KEYS,
+  writeStore,
+} from '../src/lib/store.js'
+import {
   exampleLesson,
   exampleInventory,
   exampleForm,
@@ -47,6 +57,22 @@ function section(title) {
 }
 
 console.log('Village — verify\n')
+
+// A stand-in for the browser's local storage, so the store's rules can be
+// checked without a browser.
+function fakeStorage(initial = {}) {
+  const data = { ...initial }
+  return {
+    data,
+    getItem: (key) => (key in data ? data[key] : null),
+    setItem: (key, value) => {
+      data[key] = String(value)
+    },
+    removeItem: (key) => {
+      delete data[key]
+    },
+  }
+}
 
 // A lesson and an inventory where every count is a number, so the whole
 // check can pass and the green light is reachable.
@@ -156,6 +182,102 @@ check('numbers that are already numbers stay numbers', () => {
   const payload = normalizeForm(form)
   assert.equal(payload.classSize, 40)
   assert.equal(payload.durationMinutes, 35)
+})
+
+section('The shelf on the teacher\'s own machine')
+check('a shelf that is written comes back the same', () => {
+  const storage = fakeStorage()
+  const shelf = shelfFromForm({
+    ...emptyForm(),
+    grade: 'Primary 6',
+    subject: 'Mathematics',
+    topic: 'Ratios',
+    curriculumObjective: 'Represent ratios',
+    classSize: '40',
+    durationMinutes: '35',
+    constraints: 'No internet',
+    materials: [{ id: 'material-1', name: 'bottle tops', quantity: '40' }],
+  })
+  assert.equal(writeStore(storage, STORE_KEYS.shelf, shelf), true)
+  assert.deepEqual(readStore(storage, STORE_KEYS.shelf), shelf)
+})
+check('the classroom comes back the way the teacher left it', () => {
+  const storage = fakeStorage()
+  writeStore(
+    storage,
+    STORE_KEYS.shelf,
+    shelfFromForm({
+      ...emptyForm(),
+      grade: 'Primary 6',
+      topic: 'Understand and represent ratios',
+      curriculumObjective: 'Represent and compare ratios',
+      classSize: '40',
+      durationMinutes: '35',
+      materials: [{ id: 'material-1', name: 'bottle tops', quantity: '40' }],
+    }),
+  )
+  const form = formFromShelf(readStore(storage, STORE_KEYS.shelf))
+  assert.equal(form.grade, 'Primary 6')
+  assert.equal(form.topic, 'Understand and represent ratios')
+  assert.equal(form.curriculumObjective, 'Represent and compare ratios')
+  assert.equal(form.classSize, '40')
+  assert.equal(form.durationMinutes, '35')
+  assert.equal(form.materials.length, 1)
+  assert.equal(form.materials[0].name, 'bottle tops')
+  assert.equal(form.materials[0].quantity, '40')
+})
+check('material rows come back with ids, because the page needs them', () => {
+  const form = formFromShelf({
+    materials: [{ name: 'beans', quantity: 'a bag' }],
+  })
+  assert.ok(form.materials[0].id)
+  assert.ok(form.materials[0].id !== form.materials[1]?.id)
+})
+check('a row the teacher started and abandoned is not remembered', () => {
+  const shelf = shelfFromForm({
+    ...emptyForm(),
+    topic: 'Ratios',
+    materials: [
+      { id: 'material-1', name: 'bottle tops', quantity: '40' },
+      { id: 'material-2', name: '   ', quantity: '3' },
+    ],
+  })
+  assert.equal(shelf.materials.length, 1)
+  const form = formFromShelf(shelf)
+  assert.equal(form.materials.length, 1)
+})
+check('a shelf that is broken falls back to empty instead of breaking the page', () => {
+  const storage = fakeStorage({ [STORE_KEYS.shelf]: 'not json at all' })
+  assert.equal(readStore(storage, STORE_KEYS.shelf, null), null)
+  const form = formFromShelf(readStore(storage, STORE_KEYS.shelf))
+  assert.deepEqual(form, emptyForm())
+})
+check('a shelf written by another version of Village is ignored', () => {
+  const storage = fakeStorage({
+    [STORE_KEYS.shelf]: JSON.stringify({ version: 99, value: { grade: 'Old' } }),
+  })
+  assert.equal(readStore(storage, STORE_KEYS.shelf, null), null)
+})
+check('no storage at all is not a crash', () => {
+  assert.equal(writeStore(null, STORE_KEYS.shelf, { grade: 'Primary 6' }), false)
+  assert.equal(readStore(null, STORE_KEYS.shelf, 'fallback'), 'fallback')
+  assert.equal(clearStore(null, STORE_KEYS.shelf), false)
+})
+check('forgetting the classroom clears it', () => {
+  const storage = fakeStorage()
+  writeStore(storage, STORE_KEYS.shelf, shelfFromForm({ ...emptyForm(), topic: 'Ratios' }))
+  assert.equal(clearStore(storage, STORE_KEYS.shelf), true)
+  assert.equal(readStore(storage, STORE_KEYS.shelf, null), null)
+})
+check('an empty classroom is recognised as empty', () => {
+  assert.equal(isEmptyShelf(null), true)
+  assert.equal(isEmptyShelf({ materials: [] }), true)
+  assert.equal(isEmptyShelf({ materials: [{ name: '', quantity: '' }] }), true)
+  assert.equal(isEmptyShelf({ materials: [{ name: 'beans', quantity: 'a bag' }] }), false)
+  assert.equal(isEmptyShelf({ topic: 'Ratios' }), false)
+})
+check('the store has no browser outside a browser', () => {
+  assert.equal(browserStorage(), null)
 })
 
 section('The feasibility checker — materials')

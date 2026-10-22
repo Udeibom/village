@@ -769,6 +769,70 @@ check('on a narrow screen the panel drops below the lesson', async () => {
   await page.setViewport(1280, 900)
 })
 
+check('the classroom is still there after a reload', async () => {
+  // Everything above filled the form in; the shelf should have been kept.
+  await page.goto(APP_URL)
+  await page.waitForSelector('button.button-primary')
+
+  const topic = await page.evaluate(
+    () => document.querySelector('input[name="topic"]').value,
+  )
+  if (topic !== FORM.topic) {
+    throw new Error(`the topic came back as "${topic}"`)
+  }
+
+  const classSize = await page.evaluate(
+    () => document.querySelector('input[name="classSize"]').value,
+  )
+  if (classSize !== FORM.classSize) {
+    throw new Error(`the class size came back as "${classSize}"`)
+  }
+
+  // One row was removed by the money shot above, on purpose.
+  const rows = await page.count('input[aria-label="Material name"]')
+  if (rows !== INVENTORY.length - 1) {
+    throw new Error(`expected ${INVENTORY.length - 1} material rows, got ${rows}`)
+  }
+
+  const name = await page.evaluate(() => {
+    const first = document.querySelector('input[aria-label="Material name"]')
+    return first ? first.value : null
+  })
+  if (name !== INVENTORY[0][0]) throw new Error(`the first material is now "${name}"`)
+})
+
+check('the app says where the classroom is kept', async () => {
+  const note = await page.text('.storage-note')
+  if (!note) throw new Error('there is no note about where the classroom is kept')
+  if (!note.includes('this device')) {
+    throw new Error(`the note does not say it is kept on the device: "${note}"`)
+  }
+  if (!note.includes('not sent to any service')) {
+    throw new Error(`the note does not say it is not sent anywhere: "${note}"`)
+  }
+  if (!(await page.isVisible('.button-forget'))) {
+    throw new Error('there is no way to forget the classroom')
+  }
+})
+
+check('the teacher can forget their classroom', async () => {
+  await page.click('.button-forget')
+  await sleep(200)
+  const topic = await page.evaluate(
+    () => document.querySelector('input[name="topic"]').value,
+  )
+  if (topic !== '') throw new Error(`the topic is still "${topic}"`)
+  const rows = await page.count('input[aria-label="Material name"]')
+  if (rows !== 0) throw new Error(`expected no material rows, got ${rows}`)
+
+  await page.goto(APP_URL)
+  await page.waitForSelector('button.button-primary')
+  const after = await page.evaluate(
+    () => document.querySelector('input[name="topic"]').value,
+  )
+  if (after !== '') throw new Error(`the topic came back as "${after}"`)
+})
+
 check('the page raised no uncaught errors', () => {
   if (pageErrors.length > 0) {
     throw new Error(pageErrors.join(' | '))

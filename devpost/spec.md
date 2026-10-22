@@ -81,20 +81,25 @@ Print-styled rendering of lesson + feasibility panel via `window.print()` and a 
 ### Groq client (`server/grok.js`)
 Builds prompts, calls Groq with strict JSON response format, parses and validates shape. Two prompt jobs: initial generation, and rebuild-with-shortfall. Returns parsed lesson object or throws.
 
-### Deterministic checker (`server/validate.js`)
-The kernel. Pure functions, no AI:
+### Deterministic checker (`shared/validate.js`)
+The kernel. Pure functions, no AI, no network, no Node-only code — the browser runs this exact file, which is what makes the app work with no internet:
 - **Materials:** for each material the lesson requires, match against inventory by case-insensitive name. If both quantities parse as numbers → compare (enough / short by X). If either is non-numeric ("a bag") → presence-only match, and the row shows "quantity unverified" honestly.
 - **Timing:** sum activity durations; pass if the total fits within the stated duration (2-minute tolerance); flag overruns and large underfills (< 60% of duration).
 - **Assessment:** the AI must declare which objective each assessment activity serves; checker verifies at least one declared link matches the stated objective, and surfaces the AI's reason. (It verifies the declared trace — pedagogical truth stays with the teacher, per the honesty line.)
-- **Curriculum:** field is required; checker surfaces the AI's declared confidence: "aligned to the objective you provided" or "curriculum match unverified."
+- **Curriculum:** when the teacher has pasted their own curriculum document, the document decides the row — the objective is searched for in the document's lines, and the row quotes the line it found ("Your curriculum document says: …"), or reports plainly that the objective could not be found there. The model's own confidence claim is not consulted when a document is present. With no document the row says the match is unverified.
 - Verdict: **Ready to teach** only when all four pass; otherwise **Needs attention** with specifics.
 Implements `prd.md > The feasibility check` and `prd.md > Rebuilding around what's available`.
 
+### Timing fitter (`server/timing.js`)
+`fitActivitiesToBudget(activities, minutes)` scales the activity durations proportionally onto the lesson's budget, keeps their order and their number, gives every activity at least a minute, and lands the total exactly on the budget. A lesson already within the check's 2-minute tolerance is left untouched. The generate→check→rebuild loop fits before it checks, so the model is never asked to be good at arithmetic, and the panel says when it happened.
+
 ## Data Model
 
-All state is in-memory (React state + request payloads). Nothing stored server-side between requests.
+All state is in-memory on the server (React state + request payloads). Nothing is stored server-side between requests.
 
-**Form state (page):** `{ grade, subject, topic, learningObjective, curriculumObjective, classSize, durationMinutes, constraints, materials: [{ name, quantity }] }`
+On the teacher's own device, `localStorage` holds the shelf (their classroom: the form and its materials), the classroom's record of what was taught, and the curriculum document — under versioned keys, with corrupt or outdated data falling back safely rather than throwing. Nothing is sent to any service.
+
+**Form state (page):** `{ grade, subject, topic, learningObjective, curriculumObjective, curriculumDocument, classSize, durationMinutes, constraints, materials: [{ name, quantity }] }`
 
 **Lesson object (returned by Groq, round-tripped for checks):**
 ```
@@ -122,7 +127,8 @@ All state is in-memory (React state + request payloads). Nothing stored server-s
     assessment: { status, detail },
     curriculum: { status, detail }
   },
-  rebuildsAttempted
+  rebuildsAttempted,
+  timingFitted: { fitted, before, after }   // only when the timings were fitted
 }
 ```
 
@@ -148,7 +154,11 @@ village/
 │   ├── lib/
 │   │   ├── formRules.js  # when Generate is enabled
 │   │   ├── store.js      # localStorage: shelf, bank, curriculum document
-│   │   └── reuse.js      # which banked activity fits this lesson
+│   │   ├── bank.js       # the classroom's record of what was taught
+│   │   ├── reuse.js      # which banked activity fits this lesson
+│   │   ├── lessonCard.js # the portable lesson file a colleague can import
+│   │   ├── localCheck.js # the kernel, run in the browser (no internet needed)
+│   │   └── materialRows.js
 │   └── components/
 │       ├── LessonRequestForm.jsx
 │       ├── RealityForm.jsx
@@ -186,13 +196,14 @@ village/
 - **Groq call fails or times out** → plain-language error under the form ("Couldn't build the lesson — the AI service didn't respond. Try again in a moment.") with a Try again button; **all form data preserved** (PRD requirement).
 - **Groq returns malformed JSON** → one automatic repair-prompt retry; if it fails again, same error state as above.
 - **Rate limit hit** → error message says to wait a few seconds and try again; form preserved.
+- **No internet** → the browser says so plainly ("No internet connection. Village still opens, still checks your lessons and still prints them"), and only writing a *new* lesson is refused, with a message saying what still works. Everything else — the shelf, the classroom's record, the checks, the edits and the print-out — runs in the browser against the shared kernel.
 - **Rebuilds exhausted (2) with checks still failing** → return the lesson anyway with **Needs attention** and the exact shortfalls listed — never a silent pass.
 
 ## What Was Simplified and Why
 
 - **Checker verifies declared assessment-objective links rather than judging pedagogy** — true pedagogical judgment isn't reliably automatable; the honesty line keeps the teacher as the final authority (kernel preserved: the check still can't be skipped or gamed into a pass).
 - **Non-numeric quantities get presence-only matching with "quantity unverified"** instead of unit parsing — honest partial checking beats a fake precise one.
-- **No persistence / no database** — PRD says sessions don't carry over; a JSON file would add nothing to the proof.
+- **No server-side persistence / no database** — the server keeps nothing between requests; what the teacher keeps lives on their own device, which is the point of the classroom record.
 - **Local run only, no deployment** — recording the local app satisfies submission; hosting would add setup without proving the kernel.
 
 ## Decisions and Open Issues

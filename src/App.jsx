@@ -10,6 +10,11 @@ import BankPanel from './components/BankPanel.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
 import { addRecord, makeRecord, removeRecord } from './lib/bank.js'
 import {
+  describeOffer,
+  findReusableActivity,
+  lessonUsesActivity,
+} from './lib/reuse.js'
+import {
   browserStorage,
   clearStore,
   formFromShelf,
@@ -44,6 +49,9 @@ export default function App() {
   )
   const [banked, setBanked] = useState(null)
   const [lessonNumber, setLessonNumber] = useState(0)
+  // What the classroom's record offered this lesson, and whether the lesson
+  // actually used it.
+  const [reuse, setReuse] = useState(null)
   const checkNumber = useRef(0)
   // Nothing is written to the shelf until the teacher changes something, so
   // an empty first visit does not overwrite what they had.
@@ -82,11 +90,34 @@ export default function App() {
     setError('')
     setRechecked(false)
     setBanked(null)
+    setReuse(null)
+
+    // The choice of what to reuse is made here, in code, out of the teacher's
+    // own record — not by the model.
+    const offer = findReusableActivity(bank, form)
+    const preferred = describeOffer(offer)
+
     try {
-      const result = await generateLesson(normalizeForm(form))
+      const result = await generateLesson({
+        ...normalizeForm(form),
+        preferredActivity: preferred
+          ? {
+              name: preferred.name,
+              durationMinutes: preferred.durationMinutes,
+              instructions: preferred.instructions,
+              materials: preferred.materials,
+            }
+          : null,
+      })
       setLesson(result.lesson)
       setFeasibility(result.feasibility)
       setLessonNumber((number) => number + 1)
+      if (offer) {
+        setReuse({
+          offer: preferred,
+          used: lessonUsesActivity(result.lesson, offer),
+        })
+      }
       setStatus('idle')
     } catch (failure) {
       setError(failure.message)
@@ -245,6 +276,7 @@ export default function App() {
                 feasibility={feasibility}
                 checking={checking}
                 rechecked={rechecked}
+                reuse={reuse}
               />
             </div>
           </section>

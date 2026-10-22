@@ -871,6 +871,35 @@ check('the banked lesson is still there after a reload', async () => {
   }
 })
 
+check('the next lesson is planned around what worked before', async () => {
+  // The same classroom, a new topic. The record from the lesson that worked
+  // is still in the bank.
+  await page.fill('input[name="topic"]', 'Understand and compare fractions')
+  await sleep(200)
+  await page.click('button.button-primary')
+  await page.waitForSelector('.result-lesson .lesson-title', 20000)
+
+  const title = await page.text('.lesson-title')
+  if (!title.includes('fractions')) {
+    throw new Error(`the new lesson is not about fractions: "${title}"`)
+  }
+
+  await page.waitForSelector('.reuse-note', 10000)
+  const note = await page.text('.reuse-note')
+  if (!note.includes('your classroom')) {
+    throw new Error(`the panel does not say where the plan came from: "${note}"`)
+  }
+  if (!note.includes('marked as worked')) {
+    throw new Error(`the panel does not say it was proved: "${note}"`)
+  }
+  if (!note.includes('40 pupils')) {
+    throw new Error(`the panel does not say how many pupils it was taught to: "${note}"`)
+  }
+  if (!(await page.isVisible('.reuse-used'))) {
+    throw new Error('the panel does not say the lesson actually uses the activity')
+  }
+})
+
 check('the teacher can take a lesson out of the record', async () => {
   await page.goto(APP_URL)
   await page.waitForSelector('button.button-primary')

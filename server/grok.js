@@ -191,6 +191,26 @@ function describeMaterials(materials) {
     .join('\n')
 }
 
+// The activity that already worked in this classroom. It is handed over as a
+// method to reuse, pointed at today's objective — never as content to copy.
+function describePreferred(preferred) {
+  if (!preferred || !preferred.name) return ''
+  const materials = (preferred.materials || [])
+    .map((material) => `${material.name} (${material.quantityNeeded})`)
+    .join(', ')
+
+  return `
+THE ACTIVITY THAT ALREADY WORKED IN THIS CLASSROOM
+The teacher taught this activity before, in this same room, and said it worked.
+Reuse its method and point it at today's objective — do not copy its content,
+and do not carry over its old topic.
+- ${preferred.name} (${preferred.durationMinutes} min)
+  How it went: ${preferred.instructions}
+  Materials it used: ${materials || 'none listed'}
+
+`
+}
+
 export function buildGenerationPrompt(form) {
   const duration =
     form.durationMinutes === null || form.durationMinutes === undefined
@@ -204,6 +224,11 @@ export function buildGenerationPrompt(form) {
     form.classSize === null || form.classSize === undefined
       ? 'not stated'
       : `${form.classSize} pupils`
+
+  // The activity that worked in this classroom before, if there is one. The
+  // choice was made in code, out of the teacher's own record — the model is
+  // only being told what to aim at.
+  const preferred = describePreferred(form.preferredActivity)
 
   return `Plan one lesson for a real classroom.
 
@@ -222,7 +247,7 @@ Constraints (the teacher's own words): ${form.constraints || 'none stated'}
 
 MATERIALS THE TEACHER HAS CONFIRMED
 ${describeMaterials(form.materials)}
-
+${preferred}
 HOW TO PLAN
 1. Build four to six activities. Write them for this class, this time, these
    constraints — no projector, no printing and no internet unless the
@@ -288,7 +313,7 @@ ${gapsText}
 
 WHAT THE TEACHER ACTUALLY HAS
 ${describeMaterials(form.materials)}
-
+${describePreferred(form.preferredActivity)}
 THE LESSON YOU WROTE BEFORE
 ${previous}
 

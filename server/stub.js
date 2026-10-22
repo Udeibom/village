@@ -33,6 +33,7 @@ export function stubLesson(form) {
   const minutes = splitEvenly(duration, 4)
   const inventory = form.materials || []
   const objective = form.learningObjective || form.topic || 'the learning objective'
+  const preferred = form.preferredActivity || null
 
   // Every material the teacher listed has to turn up in the lesson, so the
   // panel has something to check for each one.
@@ -46,8 +47,28 @@ export function stubLesson(form) {
   }
 
   const activities = minutes.map((length, index) => {
-    const materials = byActivity[index].map((material, materialIndex) => {
-      const quantity = material.quantity ? material.quantity : 'a handful'
+    // When the classroom's own record offers an activity that worked before,
+    // the stub does what the real model is asked to do: it starts from that
+    // activity, pointed at today's topic.
+    const reusing = preferred && index === 0
+    const preferredMaterials = reusing
+      ? (preferred.materials || []).filter((material) =>
+          inventory.some(
+            (owned) => normalise(owned.name) === normalise(material.name),
+          ),
+        )
+      : []
+
+    const source = reusing && preferredMaterials.length > 0
+      ? preferredMaterials
+      : byActivity[index]
+
+    const materials = source.map((material, materialIndex) => {
+      const quantity = material.quantity
+        ? material.quantity
+        : material.quantityNeeded
+          ? material.quantityNeeded
+          : 'a handful'
 
       // The stub deliberately asks for one more of the first material than
       // the teacher has, so the rebuild loop always has real work to do
@@ -63,9 +84,13 @@ export function stubLesson(form) {
     })
 
     return {
-      name: `${ACTIVITY_NAMES[index]}: ${form.topic || 'the topic'}`,
+      name: reusing
+        ? preferred.name
+        : `${ACTIVITY_NAMES[index]}: ${form.topic || 'the topic'}`,
       durationMinutes: length,
-      instructions: `Do the ${ACTIVITY_NAMES[index].toLowerCase()} as a class, using only what is in the room.`,
+      instructions: reusing
+        ? `${preferred.instructions} (pointed at today's objective)`
+        : `Do the ${ACTIVITY_NAMES[index].toLowerCase()} as a class, using only what is in the room.`,
       materials,
       understandingCheck:
         'Ask two pupils to say what they did in their own words, and listen for the idea.',

@@ -37,6 +37,27 @@ export function toNumberOrNull(value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+// The activity that already worked in this classroom, when there is one. The
+// choice is made in code, out of the teacher's own record; this only tidies
+// it up for the trip to the server.
+export function normalizePreferredActivity(preferred) {
+  if (!preferred || typeof preferred !== 'object') return null
+  const name = text(preferred.name)
+  if (name === '') return null
+  const materials = Array.isArray(preferred.materials) ? preferred.materials : []
+  return {
+    name,
+    durationMinutes: toNumberOrNull(preferred.durationMinutes),
+    instructions: text(preferred.instructions),
+    materials: materials
+      .filter((material) => material && text(material.name) !== '')
+      .map((material) => ({
+        name: text(material.name),
+        quantityNeeded: text(material.quantityNeeded),
+      })),
+  }
+}
+
 // The payload the server receives: no client-only row ids, numbers where a
 // number makes sense, and blank material rows dropped.
 export function normalizeForm(form) {
@@ -60,5 +81,6 @@ export function normalizeForm(form) {
         name: text(material.name),
         quantity: text(material.quantity),
       })),
+    preferredActivity: normalizePreferredActivity(source.preferredActivity),
   }
 }

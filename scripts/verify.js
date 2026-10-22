@@ -19,6 +19,14 @@ import {
   updateRecord,
 } from '../src/lib/bank.js'
 import {
+  describeOffer,
+  findReusableActivity,
+  lessonUsesActivity,
+  objectiveOverlap,
+  shelfCovers,
+  withinBand,
+} from '../src/lib/reuse.js'
+import {
   browserStorage,
   clearStore,
   formFromShelf,
@@ -370,6 +378,185 @@ check('the record is kept on the device like everything else', () => {
   const bank = readStore(storage, STORE_KEYS.bank, [])
   assert.equal(bank.length, 1)
   assert.equal(bank[0].outcome, 'worked')
+})
+
+section('Planning the next lesson around what worked')
+check('an activity that worked in this classroom is offered again', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+    id: 'record-1',
+    date: '2026-10-20T09:00:00.000Z',
+  })
+  const offer = findReusableActivity([record], exampleForm)
+  assert.ok(offer, 'nothing was offered')
+  assert.equal(offer.record.id, 'record-1')
+  assert.equal(offer.activity.name, 'Sharing in equal groups')
+})
+check('a lesson that did not work is never offered again', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'failed',
+  })
+  assert.equal(findReusableActivity([record], exampleForm), null)
+})
+check('a lesson that was never judged is never offered again', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'changes',
+  })
+  assert.equal(findReusableActivity([record], exampleForm), null)
+})
+check('an activity whose materials are not on the shelf now is not offered', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+  })
+  const emptyShelf = { ...exampleForm, materials: [] }
+  assert.equal(findReusableActivity([record], emptyShelf), null)
+})
+check('an activity that needs something the shelf no longer has is skipped', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+  })
+  // The shelf has chalk and the blackboard, but no bottle tops and no cups.
+  const shelf = {
+    ...exampleForm,
+    materials: [
+      { name: 'chalk', quantity: '1' },
+      { name: 'blackboard', quantity: '1' },
+    ],
+  }
+  const offer = findReusableActivity([record], shelf)
+  assert.ok(offer, 'nothing was offered')
+  assert.equal(offer.activity.name, 'Writing ratios down')
+})
+check('an activity from a much bigger class is not offered', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: { ...exampleForm, classSize: 90 },
+    outcome: 'worked',
+  })
+  assert.equal(findReusableActivity([record], exampleForm), null)
+})
+check('an activity from a different subject is not offered', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: { ...exampleForm, subject: 'Science' },
+    outcome: 'worked',
+  })
+  assert.equal(findReusableActivity([record], exampleForm), null)
+})
+check('an activity that would leave no room in the lesson is not offered', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: { ...exampleForm, durationMinutes: 10 },
+    outcome: 'worked',
+  })
+  const shortLesson = { ...exampleForm, durationMinutes: 8 }
+  assert.equal(findReusableActivity([record], shortLesson), null)
+})
+check('a new objective does not rule the activity out — it only ranks it', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+  })
+  const nextLesson = {
+    ...exampleForm,
+    topic: 'Understand and compare fractions',
+    learningObjective: 'Understand and compare fractions',
+    curriculumObjective:
+      'By the end of the lesson, learners should be able to compare and order fractions with the same denominator.',
+  }
+  const offer = findReusableActivity([record], nextLesson)
+  assert.ok(offer, 'nothing was offered for the new topic')
+})
+check('the newest proved lesson wins when two are equally good', () => {
+  const older = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+    id: 'older',
+    date: '2026-10-01T09:00:00.000Z',
+  })
+  const newer = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+    id: 'newer',
+    date: '2026-10-20T09:00:00.000Z',
+  })
+  const offer = findReusableActivity([older, newer], exampleForm)
+  assert.equal(offer.record.id, 'newer')
+})
+check('the offer says what to aim at, and where it came from', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+    id: 'record-1',
+    date: '2026-10-20T09:00:00.000Z',
+  })
+  const offer = findReusableActivity([record], exampleForm)
+  const described = describeOffer(offer)
+  assert.equal(described.name, 'Sharing in equal groups')
+  assert.equal(described.durationMinutes, 6)
+  assert.equal(described.materials[0].name, 'bottle tops')
+  assert.equal(described.from.title, exampleLesson.title)
+  assert.equal(described.from.classSize, 40)
+})
+check('Village checks whether the lesson really used the activity', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+  })
+  const offer = findReusableActivity([record], exampleForm)
+  assert.equal(lessonUsesActivity(exampleLesson, offer), true)
+  const otherLesson = {
+    ...exampleLesson,
+    activities: [
+      { ...exampleLesson.activities[0], name: 'Something else entirely' },
+      ...exampleLesson.activities.slice(1),
+    ],
+  }
+  assert.equal(lessonUsesActivity(otherLesson, offer), false)
+})
+check('the shelf has to cover what the activity needs', () => {
+  assert.equal(
+    shelfCovers([{ name: 'bottle tops' }], ['bottle tops']),
+    true,
+  )
+  assert.equal(
+    shelfCovers([{ name: 'Bottle Tops' }], ['bottle tops']),
+    true,
+  )
+  assert.equal(shelfCovers([{ name: 'beans' }], ['bottle tops']), false)
+})
+check('a band is about the same, and an unknown number rules nothing out', () => {
+  assert.equal(withinBand(40, 40, 0.25), true)
+  assert.equal(withinBand(40, 45, 0.25), true)
+  assert.equal(withinBand(40, 90, 0.25), false)
+  assert.equal(withinBand(null, 40, 0.25), true)
+})
+check('two objectives can be about the same thing', () => {
+  assert.ok(
+    objectiveOverlap(
+      'Represent and compare ratios using equivalent forms',
+      'By the end of the lesson, learners should be able to represent and compare ratios.',
+    ) > 0.4,
+  )
+  assert.equal(
+    objectiveOverlap('Represent and compare ratios', 'Convert fractions into decimals'),
+    0,
+  )
 })
 
 section('The feasibility checker — materials')

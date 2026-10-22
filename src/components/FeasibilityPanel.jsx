@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatDate } from '../lib/bank.js'
 
 const MATERIAL_LABELS = {
   ok: 'Enough',
@@ -37,7 +38,7 @@ function Check({ title, status, children }) {
   )
 }
 
-export default function FeasibilityPanel({ feasibility, checking = false, rechecked = false }) {
+export default function FeasibilityPanel({ feasibility, checking = false, rechecked = false, reuse = null }) {
   if (!feasibility) return null
 
   const { verdict, checks } = feasibility
@@ -82,6 +83,31 @@ export default function FeasibilityPanel({ feasibility, checking = false, rechec
             ? ''
             : ' It still could not sort everything out — the gaps below are the ones left.'}
         </p>
+      )}
+
+      {reuse && reuse.offer && (
+        <div className={`reuse-note${reuse.used ? ' reuse-used' : ''}`}>
+          <p className="reuse-title">From your classroom&rsquo;s record</p>
+          <p className="reuse-text">
+            {reuse.used ? (
+              <>
+                This lesson uses &ldquo;{reuse.offer.name}&rdquo; — the activity
+                you taught on {formatDate(reuse.offer.from.date)} and marked as
+                worked
+                {reuse.offer.from.classSize
+                  ? ` with ${reuse.offer.from.classSize} pupils`
+                  : ''}
+                .
+              </>
+            ) : (
+              <>
+                Village offered &ldquo;{reuse.offer.name}&rdquo; — the activity
+                you taught on {formatDate(reuse.offer.from.date)} and marked as
+                worked — but this lesson does not use it.
+              </>
+            )}
+          </p>
+        </div>
       )}
 
       <Check title="Materials" status={materials.every((row) => row.status === 'ok') ? 'ok' : 'fail'}>

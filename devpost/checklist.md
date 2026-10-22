@@ -68,7 +68,7 @@ Build mode: fast
   Learner check: Fill the form, refresh, and see your classroom still there. Then check where the data is kept.
   Commit: `Remember the shelf on the teacher's own machine`
 
-- [ ] **7. "How did it go?" — the classroom's playbook**
+- [x] **7. "How did it go?" — the classroom's playbook**
   Becomes usable: After a lesson, the teacher answers one question — *worked*, *needed changes*, or *didn't work*, optionally adding what was actually missing — and that answer is banked with the lesson, the shelf it was built for, the class size and the date.
   Why now: The bank's only value comes from the teacher's verdict on it. Without the verdict it is a log; with it, it is a record of what works in this room.
   PRD ref: `prd.md > "How did it go?" — the classroom's playbook`, `prd.md > States and Boundaries` (first run, empty bank)
@@ -81,7 +81,7 @@ Build mode: fast
   Becomes usable: When the teacher plans again, Village looks through the bank for activities that fit the current shelf, class size, duration and objective and that the teacher marked as working — and the new lesson is built around the proven activity, with a line saying where it came from.
   Why now: This is the promise that makes the bank worth anything, and the answer to "why not a chat window": the selection happens in code against this classroom's own record, and the panel shows the source.
   PRD ref: `prd.md > Planning the next lesson around what worked before`
-  Build: `src/lib/reuse.js` — deterministic retrieval: match a banked lesson on shelf fingerprint (the same material names), class-size band, duration band and objective keywords; refuse anything marked *didn't work*, imported-but-unverified, or from a much bigger class. The chosen activity is passed to the generation prompt as a preferred activity; the panel shows a provenance line (which lesson, when, with what class) and the lesson records what was reused.
+  Build: `src/lib/reuse.js` — deterministic retrieval: an activity is offered only if it was proved in this classroom, every material it needs is on the shelf now, the class and the lesson length are within a quarter of what they were then, it leaves room in the lesson for the rest of the teaching, and it is the same subject and year group. The objective ranks the candidates but never rules them out — an activity that worked once is worth pointing at a new objective. The chosen activity is passed to the generation prompt as a preferred activity; the panel shows a provenance line (which lesson, when, with what class) and says plainly whether the lesson that came back actually uses it.
   Verify (mechanical): `npm run verify` asserts retrieval picks the right banked activity for the same shelf and objective, refuses a *didn't work* lesson, refuses one from a different shelf, refuses one for a much larger class, and prefers the most recent; `npm run browser-check` banks a lesson, changes the topic, generates again, and asserts the new lesson names the reused activity and where it came from.
   Learner check: Bank the ratios lesson as "worked", change the topic to fractions, generate again, and look for the line saying where the activity came from.
   Commit: `Plan the next lesson around what worked before`

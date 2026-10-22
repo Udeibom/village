@@ -51,6 +51,8 @@ npm run dev     # starts Express on :3001 and Vite on :5173 (proxies /api)
 
 Open `http://localhost:5173`. This is also the demo-recording setup — deployment is optional and not planned; `6-ship` can revisit if desired. Submission needs the short demo video + public GitHub repo; a local app recorded on screen satisfies both.
 
+**Public repository:** <https://github.com/Udeibom/village> — created and pushed on 2026-10-22 with the learner's explicit authorisation. Public, default branch `main`, full build history. What was checked before publishing: no API key and no `.env` in the history, `devpost/learner-profile.md` ignored and never committed, and the local machine path trimmed out of the handoff note.
+
 ## Look and Feel
 
 Carried from `prd.md > Look and Feel`: warm paper-and-chalk character, readable serif/humanist fonts (e.g. a serif like "Source Serif" or system Georgia for headings, humanist sans for body), muted earth tones — clay, charcoal, warm paper background — no blue-purple gradients. Feasibility panel styled like a marked-up checklist; plain-language pass/fail lines. Interface copy in a competent-colleague tone, including the fixed honesty line: *"Illustrative draft — review against your curriculum and your pupils' prior knowledge."* Plain CSS (a single stylesheet), no component library — keeps the warm look under the learner's control instead of fighting a framework's defaults.

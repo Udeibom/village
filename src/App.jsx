@@ -8,7 +8,8 @@ import PrintView from './components/PrintView.jsx'
 import OutcomeStrip from './components/OutcomeStrip.jsx'
 import BankPanel from './components/BankPanel.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
-import { addRecord, makeRecord, removeRecord } from './lib/bank.js'
+import { addRecord, makeRecord, removeRecord, updateRecord } from './lib/bank.js'
+import { cardFileName, downloadCard, makeCard, parseCard } from './lib/lessonCard.js'
 import {
   describeOffer,
   findReusableActivity,
@@ -52,6 +53,8 @@ export default function App() {
   // What the classroom's record offered this lesson, and whether the lesson
   // actually used it.
   const [reuse, setReuse] = useState(null)
+  const [importError, setImportError] = useState('')
+  const [importNotice, setImportNotice] = useState('')
   const checkNumber = useRef(0)
   // Nothing is written to the shelf until the teacher changes something, so
   // an empty first visit does not overwrite what they had.
@@ -143,6 +146,72 @@ export default function App() {
     setBank(next)
     writeStore(browserStorage(), STORE_KEYS.bank, next)
     if (banked && banked.id === id) setBanked(null)
+  }
+
+  // The teacher taught a lesson that came from a colleague, and it worked
+  // here too. Now it is proved in this classroom.
+  const verifyRecord = (id) => {
+    const next = updateRecord(bank, id, { outcome: 'worked', verified: true })
+    setBank(next)
+    writeStore(browserStorage(), STORE_KEYS.bank, next)
+  }
+
+  // A proven lesson, handed to a colleague as one small file.
+  const exportRecord = (record) => {
+    const card = makeCard(record)
+    const sent = downloadCard(card, cardFileName(card.title))
+    if (!sent) {
+      setImportError('Village could not make that file. Try again in a moment.')
+    }
+  }
+
+  // A lesson card from a colleague. It is a candidate, not a claim.
+  const importRecord = async (event) => {
+    const file = event.target.files && event.target.files[0]
+    if (!file) return
+    let raw = ''
+    try {
+      raw = await file.text()
+    } catch {
+      setImportError('Village could not read that file.')
+      event.target.value = ''
+      return
+    }
+
+    const parsed = parseCard(raw)
+    if (!parsed.ok) {
+      setImportError(parsed.error)
+      setImportNotice('')
+      event.target.value = ''
+      return
+    }
+
+    const card = parsed.card
+    const record = makeRecord({
+      lesson: card.lesson,
+      form: {
+        topic: card.title,
+        curriculumObjective: '',
+        classSize: card.classSize,
+        durationMinutes: card.durationMinutes,
+        materials: card.materials,
+        grade: '',
+        subject: '',
+      },
+      outcome: '',
+      note: card.note,
+      source: 'colleague',
+      verified: false,
+    })
+
+    const next = addRecord(bank, record)
+    setBank(next)
+    writeStore(browserStorage(), STORE_KEYS.bank, next)
+    setImportError('')
+    setImportNotice(
+      `Imported "${card.title}". It is a candidate — not proved in your classroom until you teach it and mark it as worked.`,
+    )
+    event.target.value = ''
   }
 
   // The teacher edited the lesson, or changed something the lesson is checked
@@ -282,7 +351,15 @@ export default function App() {
           </section>
         )}
 
-        <BankPanel bank={bank} onForget={forgetRecord} />
+        <BankPanel
+          bank={bank}
+          onForget={forgetRecord}
+          onExport={exportRecord}
+          onImport={importRecord}
+          onVerify={verifyRecord}
+          importError={importError}
+          importNotice={importNotice}
+        />
       </main>
     </div>
   )

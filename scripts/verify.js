@@ -27,6 +27,12 @@ import {
   withinBand,
 } from '../src/lib/reuse.js'
 import {
+  CARD_KIND,
+  cardFileName,
+  makeCard,
+  parseCard,
+} from '../src/lib/lessonCard.js'
+import {
   browserStorage,
   clearStore,
   formFromShelf,
@@ -557,6 +563,90 @@ check('two objectives can be about the same thing', () => {
     objectiveOverlap('Represent and compare ratios', 'Convert fractions into decimals'),
     0,
   )
+})
+
+section('A lesson card that travels')
+check('a lesson card carries the lesson and the classroom it was taught in', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+    note: 'the bean jars were the hit',
+    id: 'record-1',
+    date: '2026-10-20T09:00:00.000Z',
+  })
+  const card = makeCard(record)
+  assert.equal(card.kind, CARD_KIND)
+  assert.equal(card.title, exampleLesson.title)
+  assert.equal(card.classSize, 40)
+  assert.equal(card.durationMinutes, 35)
+  assert.equal(card.materials.length, exampleInventory.length)
+  assert.equal(card.lesson.activities.length, exampleLesson.activities.length)
+})
+check('a lesson card survives the trip unchanged', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+  })
+  const card = makeCard(record)
+  const parsed = parseCard(JSON.stringify(card))
+  assert.equal(parsed.ok, true)
+  assert.equal(parsed.card.title, card.title)
+  assert.deepEqual(parsed.card.lesson, card.lesson)
+  assert.equal(parsed.card.materials.length, card.materials.length)
+})
+check('a file that is not a lesson card is refused', () => {
+  const parsed = parseCard(JSON.stringify({ hello: 'world' }))
+  assert.equal(parsed.ok, false)
+  assert.match(parsed.error, /not a Village lesson card/)
+})
+check('a file that is not JSON at all is refused', () => {
+  const parsed = parseCard('this is not json')
+  assert.equal(parsed.ok, false)
+  assert.match(parsed.error, /could not be read/)
+})
+check('a lesson card with no activities is refused', () => {
+  const card = makeCard(
+    makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'worked' }),
+  )
+  const broken = { ...card, lesson: { ...card.lesson, activities: [] } }
+  const parsed = parseCard(JSON.stringify(broken))
+  assert.equal(parsed.ok, false)
+  assert.match(parsed.error, /no activities/)
+})
+check('a lesson card from another version is refused', () => {
+  const card = makeCard(
+    makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'worked' }),
+  )
+  const parsed = parseCard(JSON.stringify({ ...card, version: 99 }))
+  assert.equal(parsed.ok, false)
+  assert.match(parsed.error, /different version/)
+})
+check('an imported lesson is a candidate until this classroom proves it', () => {
+  const card = makeCard(
+    makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'worked' }),
+  )
+  const imported = makeRecord({
+    lesson: card.lesson,
+    form: { ...exampleForm, curriculumObjective: '' },
+    outcome: '',
+    source: 'colleague',
+    verified: false,
+  })
+  assert.equal(isReusable(imported), false)
+  assert.equal(findReusableActivity([imported], exampleForm), null)
+
+  // Once this teacher has taught it and says so, it belongs to this room.
+  const proved = updateRecord([imported], imported.id, {
+    outcome: 'worked',
+    verified: true,
+  })
+  assert.equal(isReusable(findRecord(proved, imported.id)), true)
+})
+check('the file name is one a teacher would recognise', () => {
+  assert.equal(cardFileName('Understanding and comparing ratios'), 'understanding-and-comparing-ratios.village.json')
+  assert.equal(cardFileName(''), 'lesson.village.json')
 })
 
 section('The feasibility checker — materials')

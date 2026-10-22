@@ -11,7 +11,7 @@
 // `npm run ai-check`.
 
 import { spawn } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -152,6 +152,27 @@ class Page {
     })
     await writeFile(path, Buffer.from(data, 'base64'))
     return path
+  }
+
+  // Lets the browser write downloads into a folder we can look at, so the
+  // export can be checked as a real file rather than a claim.
+  async allowDownloads(downloadPath) {
+    await this.cdp.send('Browser.setDownloadBehavior', {
+      behavior: 'allow',
+      downloadPath,
+      eventsEnabled: true,
+    })
+  }
+
+  // Gives a file input a real file, the way a teacher picking one would.
+  async setFileInput(selector, filePath) {
+    const { root } = await this.send('DOM.getDocument', { depth: 1 })
+    const { nodeId } = await this.send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector,
+    })
+    if (!nodeId) throw new Error(`nothing matches ${selector} to give a file`)
+    await this.send('DOM.setFileInputFiles', { files: [filePath], nodeId })
   }
 
   async setViewport(width, height) {
@@ -900,17 +921,96 @@ check('the next lesson is planned around what worked before', async () => {
   }
 })
 
+check('a proved lesson can be handed to a colleague as one file', async () => {
+  downloadDir = path.join(profile, 'downloads')
+  await mkdir(downloadDir, { recursive: true })
+  await page.allowDownloads(downloadDir)
+
+  await page.click('.bank-entry .button-export')
+
+  // Wait for the file to land.
+  let cardFile = null
+  const deadline = Date.now() + 10000
+  while (Date.now() < deadline && !cardFile) {
+    const files = await readdir(downloadDir)
+    cardFile = files.find((name) => name.endsWith('.village.json')) || null
+    if (!cardFile) await sleep(200)
+  }
+  if (!cardFile) throw new Error('no lesson card was downloaded')
+
+  const card = JSON.parse(
+    await readFile(path.join(downloadDir, cardFile), 'utf8'),
+  )
+  if (card.kind !== 'village-lesson-card') {
+    throw new Error('the downloaded file is not a Village lesson card')
+  }
+  if (!card.lesson || !Array.isArray(card.lesson.activities)) {
+    throw new Error('the downloaded file carries no lesson')
+  }
+  if (card.lesson.activities.length < 3) {
+    throw new Error('the downloaded lesson has no activities')
+  }
+})
+
+check('a colleague\'s lesson card can be imported', async () => {
+  const files = await readdir(downloadDir)
+  const cardFile = files.find((name) => name.endsWith('.village.json'))
+  if (!cardFile) throw new Error('there is no lesson card to import')
+
+  await page.setFileInput(
+    'input[name="lessonCard"]',
+    path.join(downloadDir, cardFile),
+  )
+  await sleep(400)
+
+  const entries = await page.count('.bank-entry')
+  if (entries !== 2) throw new Error(`expected 2 banked lessons, got ${entries}`)
+
+  const notice = await page.text('.import-note')
+  if (!notice.includes('candidate')) {
+    throw new Error(`the app does not say it is only a candidate: "${notice}"`)
+  }
+})
+
+check('an imported lesson is labelled as a colleague\'s, not proved here', async () => {
+  const entry = await page.text('.bank-entry')
+  if (!entry.includes('from a colleague')) {
+    throw new Error(`the imported lesson is not marked as a colleague's: "${entry}"`)
+  }
+  if (!entry.includes('not yet proved here')) {
+    throw new Error(`the imported lesson is not marked as unproved here: "${entry}"`)
+  }
+  if (!entry.includes('Not judged')) {
+    throw new Error(`the imported lesson is not marked as not judged: "${entry}"`)
+  }
+})
+
+check('the teacher can prove an imported lesson in their own classroom', async () => {
+  await page.click('.bank-entry .button-verify')
+  await sleep(300)
+  const entry = await page.text('.bank-entry')
+  if (!entry.includes('Worked')) {
+    throw new Error(`the imported lesson is not marked as worked: "${entry}"`)
+  }
+  if (entry.includes('not yet proved here')) {
+    throw new Error(`the imported lesson is still marked as unproved: "${entry}"`)
+  }
+})
+
 check('the teacher can take a lesson out of the record', async () => {
   await page.goto(APP_URL)
   await page.waitForSelector('button.button-primary')
   const entries = await page.count('.bank-entry')
-  if (entries !== 1) throw new Error(`expected 1 banked lesson, got ${entries}`)
+  if (entries !== 2) throw new Error(`expected 2 banked lessons, got ${entries}`)
   await page.click('.bank-entry .button-forget-record')
   await sleep(200)
   const after = await page.count('.bank-entry')
-  if (after !== 0) throw new Error(`expected no banked lessons, got ${after}`)
+  if (after !== 1) throw new Error(`expected 1 banked lesson left, got ${after}`)
+  await page.click('.bank-entry .button-forget-record')
+  await sleep(200)
+  const empty = await page.count('.bank-entry')
+  if (empty !== 0) throw new Error(`expected no banked lessons, got ${empty}`)
 })
-
 check('the teacher can forget their classroom', async () => {
   await page.click('.button-forget-shelf')
   await sleep(200)
@@ -941,6 +1041,7 @@ let page
 let devServer = null
 let chrome = null
 let profile = null
+let downloadDir = null
 try {
   console.log('starting the dev server…')
   devServer = await startDevServer()

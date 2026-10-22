@@ -77,7 +77,7 @@ Build mode: fast
   Learner check: Mark the lesson you just read as "worked", reload, and look at the record of your classroom.
   Commit: `Bank the lessons that worked`
 
-- [ ] **8. The next lesson is planned around what worked before**
+- [x] **8. The next lesson is planned around what worked before**
   Becomes usable: When the teacher plans again, Village looks through the bank for activities that fit the current shelf, class size, duration and objective and that the teacher marked as working — and the new lesson is built around the proven activity, with a line saying where it came from.
   Why now: This is the promise that makes the bank worth anything, and the answer to "why not a chat window": the selection happens in code against this classroom's own record, and the panel shows the source.
   PRD ref: `prd.md > Planning the next lesson around what worked before`

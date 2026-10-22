@@ -138,7 +138,26 @@ scripts/
   verify.js         assertions on the pure logic
   browser-check.js  headless-Chrome checks against the running app
   ai-check.js       a live run against Groq
+demo/
+  record-demo.mjs   records the demo on a private headless Chrome
+  assemble.sh       makes the cards, paces the frames, joins the video
+  shot-list.md      what is on screen at each moment, for a voice-over
+  screenshot.mjs    takes the picture the README shows
+  village-demo.mp4  the published video (1:42, silent)
 ```
+
+## What changed since the last time this file was written
+
+- The checker no longer calls a material the teacher owns missing because the
+  model wrote it in the singular. This was found by a live probe, not by
+  reading the code, and it is the kind of mistake that would have cost a
+  teacher their trust in the panel on their first lesson.
+- The panel stopped claiming it re-checked a lesson that had just been
+  written.
+- The demo was re-recorded to show the code disagreeing with the teacher's
+  own edit, and rebuilt so the frame rate is right and the offline note is
+  actually on screen.
+- The README shows the checked lesson and says how the thing was built.
 
 ## The one sentence to keep
 

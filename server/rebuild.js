@@ -2,13 +2,13 @@
 //
 // A shortage does not just get flagged: the lesson is rebuilt around what the
 // teacher actually has, and the rebuild is checked again. The AI is never
-// asked whether its own lesson is teachable — `server/validate.js` decides
+// asked whether its own lesson is teachable — `shared/validate.js` decides
 // that, every time.
 //
 // The loop is written so it can be tested without an AI: `generate` and
 // `rebuild` are passed in.
 
-import { checkLesson, shortfalls } from './validate.js'
+import { checkLesson, shortfalls } from '../shared/validate.js'
 import { fitLessonToBudget } from './timing.js'
 
 export const MAX_REBUILDS = 2

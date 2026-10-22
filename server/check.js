@@ -5,7 +5,7 @@
 // it now reads and the checker has the final word on it — that is the whole
 // point of "edits are never blindly trusted".
 
-import { checkLesson } from './validate.js'
+import { checkLesson } from '../shared/validate.js'
 import { normalizeForm } from '../src/lib/formRules.js'
 
 export function runCheck(body) {

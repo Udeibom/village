@@ -15,6 +15,7 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { checkLesson } from '../shared/validate.js'
 
 const WEB_PORT = Number(process.env.CHECK_WEB_PORT || 5174)
 const API_PORT = Number(process.env.CHECK_API_PORT || 3011)
@@ -162,6 +163,18 @@ class Page {
       downloadPath,
       eventsEnabled: true,
     })
+  }
+
+  // Makes the browser behave as if the internet is gone.
+  async setOffline(offline) {
+    await this.send('Network.enable')
+    await this.send('Network.emulateNetworkConditions', {
+      offline,
+      latency: 0,
+      downloadThroughput: offline ? 0 : -1,
+      uploadThroughput: offline ? 0 : -1,
+    })
+    await sleep(300)
   }
 
   // Gives a file input a real file, the way a teacher picking one would.
@@ -391,6 +404,45 @@ const CURRICULUM_DOCUMENT = `Mathematics — Number — Ratios
 Represent and compare ratios using equivalent forms, including word problems.
 Fractions: compare and order fractions with the same denominator.
 Measurement: convert between millimetres and centimetres.`
+
+// One lesson, sent to the server's checker and to the browser's own copy of
+// the same kernel, so the two can be compared.
+const SAME_KERNEL_PAYLOAD = {
+  lesson: {
+    title: 'Ratios',
+    intro: 'A short introduction.',
+    activities: [
+      {
+        name: 'Warm-up',
+        instructions: 'Share out the jugs.',
+        durationMinutes: 10,
+        materials: [{ name: 'Jug', quantityNeeded: '1' }],
+        understandingCheck: 'Say what you did.',
+        servesObjective: 'Represent ratios',
+      },
+      {
+        name: 'Main activity',
+        instructions: 'Work in pairs.',
+        durationMinutes: 15,
+        materials: [],
+        understandingCheck: 'Say what you did.',
+        servesObjective: 'Represent ratios',
+      },
+    ],
+    adaptations: 'Pair up.',
+    assessment: {
+      instructions: 'Write one thing you can do now.',
+      servesObjective: 'Represent ratios',
+    },
+    curriculumConfidence: 'aligned',
+    curriculumNote: 'It matches.',
+  },
+  form: {
+    ...FORM,
+    learningObjective: 'Represent ratios',
+    materials: [{ name: 'Jug', quantity: '1' }],
+  },
+}
 
 async function fillTheForm() {
   await page.fill('input[name="grade"]', FORM.grade)
@@ -978,6 +1030,122 @@ check('the next lesson is planned around what worked before', async () => {
   }
 })
 
+/* --------------------------------------------------------- with no internet */
+
+check('the server and the browser run the same checker', async () => {
+  const serverVerdict = await page.evaluate(async (payload) => {
+    const response = await fetch('/api/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await response.json()
+    return data.feasibility.verdict
+  }, SAME_KERNEL_PAYLOAD)
+
+  const browserVerdict = checkLesson(
+    SAME_KERNEL_PAYLOAD.lesson,
+    SAME_KERNEL_PAYLOAD.form,
+  ).verdict
+
+  if (serverVerdict !== browserVerdict) {
+    throw new Error(
+      `the server says "${serverVerdict}" and the browser says "${browserVerdict}"`,
+    )
+  }
+})
+
+check('with the internet gone, Village says so plainly', async () => {
+  await page.setOffline(true)
+
+  await page.waitForSelector('.offline-note', 15000)
+  const note = await page.text('.offline-note')
+  if (!note.includes('No internet connection')) {
+    throw new Error(`the offline note does not say what is wrong: "${note}"`)
+  }
+  if (!note.includes('only writing a new lesson needs')) {
+    throw new Error(`the offline note does not say what still works: "${note}"`)
+  }
+})
+
+check('with the internet gone, the classroom and its record are still there', async () => {
+  const shelf = await page.text('.storage-note')
+  if (!shelf.includes('kept on this device')) {
+    throw new Error(`the classroom is not shown as still here: "${shelf}"`)
+  }
+  const entries = await page.count('.bank-entry')
+  if (entries < 1) throw new Error('the classroom record is gone')
+})
+
+check('with the internet gone, a lesson is still checked in the browser', async () => {
+  await page.click('.activities > .activity:first-child .button-add-material')
+  await sleep(200)
+
+  await page.clickLast('.activities > .activity:first-child .activity-material-name')
+  await sleep(150)
+  await page.fill(
+    '.activities > .activity:first-child .editable-input',
+    'scraps of paper',
+  )
+  await page.pressEnter('.activities > .activity:first-child .editable-input')
+
+  await page.waitFor(
+    `document.querySelector('.verdict-title') && document.querySelector('.verdict-title').textContent.trim() === 'Needs attention'`,
+    20000,
+    'the panel to flag the material, with no internet',
+  )
+
+  const panelText = await page.text('.feasibility')
+  if (!panelText.includes('scraps of paper')) {
+    throw new Error('the panel does not name the material the teacher just added')
+  }
+  if (!panelText.includes('re-checked this after your change')) {
+    throw new Error('the panel does not say it re-checked the change')
+  }
+})
+
+check('with the internet gone, the lesson still prints', async () => {
+  await page.click('.actions .button-print')
+  await page.waitForSelector('.print-view', 10000)
+  if (!(await page.isVisible('.print-view .result-lesson'))) {
+    throw new Error('the print page has no lesson')
+  }
+  if (!(await page.isVisible('.print-view .feasibility'))) {
+    throw new Error('the print page has no feasibility panel')
+  }
+  await page.click('.print-actions .button-quiet')
+  await page.waitForGone('.print-view', 10000)
+})
+
+check('with the internet gone, a new lesson is not pretended to be possible', async () => {
+  await page.click('.actions .button-primary')
+  await page.waitForSelector('.notice-error', 10000)
+  const notice = await page.text('.notice-error')
+  if (!notice.includes('needs a connection')) {
+    throw new Error(`the message does not say it needs a connection: "${notice}"`)
+  }
+  if (!notice.includes('still works')) {
+    throw new Error(`the message does not say what still works: "${notice}"`)
+  }
+})
+
+check('when the connection comes back, Village says nothing about it', async () => {
+  await page.setOffline(false)
+  const state = await page.evaluate(() => ({
+    online: navigator.onLine,
+    note: !!document.querySelector('.offline-note'),
+  }))
+  if (!state.online) {
+    throw new Error(`the browser still thinks it is offline: ${JSON.stringify(state)}`)
+  }
+
+  await page.waitForGone('.offline-note', 20000)
+  const notice = await page.count('.notice-error')
+  if (notice !== 0) {
+    throw new Error('the offline message is still on the page')
+  }
+})
+
 check('a proved lesson can be handed to a colleague as one file', async () => {
   downloadDir = path.join(profile, 'downloads')
   await mkdir(downloadDir, { recursive: true })
@@ -1054,8 +1222,7 @@ check('the teacher can prove an imported lesson in their own classroom', async (
   }
 })
 
-check('the teacher can take a lesson out of the record', async () => {
-  await page.goto(APP_URL)
+check('the teacher can take a lesson out of the record', async () => {  await page.goto(APP_URL)
   await page.waitForSelector('button.button-primary')
   const entries = await page.count('.bank-entry')
   if (entries !== 2) throw new Error(`expected 2 banked lessons, got ${entries}`)

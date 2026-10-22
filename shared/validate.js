@@ -17,8 +17,8 @@ import {
   matchingKey,
   normaliseText,
   significantWords,
-} from '../shared/text.js'
-import { findInDocument } from '../shared/curriculum.js'
+} from './text.js'
+import { findInDocument } from './curriculum.js'
 
 function normaliseName(name) {
   return clean(name).toLowerCase().replace(/\s+/g, ' ').trim()

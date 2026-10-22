@@ -26,7 +26,8 @@ import {
   STORE_KEYS,
   writeStore,
 } from './lib/store.js'
-import { generateLesson, checkLesson } from './api.js'
+import { generateLesson } from './api.js'
+import { checkLocally } from './lib/localCheck.js'
 
 export default function App() {
   // The shelf comes back before the first paint, so the teacher's own
@@ -56,13 +57,42 @@ export default function App() {
   const [reuse, setReuse] = useState(null)
   const [importError, setImportError] = useState('')
   const [importNotice, setImportNotice] = useState('')
-  const checkNumber = useRef(0)
+  // Whether this machine can reach the internet. Only writing a new lesson
+  // needs it; checking, editing and printing do not.
+  const [online, setOnline] = useState(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine !== false,
+  )
+  // The teacher pressed Generate with no connection. Said plainly, and taken
+  // back when the connection returns.
+  const [blocked, setBlocked] = useState(false)
   // Nothing is written to the shelf until the teacher changes something, so
   // an empty first visit does not overwrite what they had.
   const touched = useRef(false)
 
-  const handleChange = (field, value) => {
-    touched.current = true
+  // The connection comes and goes. Village says so, rather than letting the
+  // teacher discover it by pressing Generate. The browser's online/offline
+  // events are the first word on it, but not every browser tells us when the
+  // connection comes back, so the app also looks again now and then.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const look = () => {
+      const connected = navigator.onLine !== false
+      setOnline(connected)
+      if (connected) setBlocked(false)
+    }
+    window.addEventListener('online', look)
+    window.addEventListener('offline', look)
+    window.addEventListener('focus', look)
+    const timer = setInterval(look, 5000)
+    return () => {
+      window.removeEventListener('online', look)
+      window.removeEventListener('offline', look)
+      window.removeEventListener('focus', look)
+      clearInterval(timer)
+    }
+  }, [])
+
+  const handleChange = (field, value) => {    touched.current = true
     setForm((current) => {
       const next = { ...current, [field]: value }
       if (field === 'topic') next.learningObjective = value
@@ -95,6 +125,12 @@ export default function App() {
     setRechecked(false)
     setBanked(null)
     setReuse(null)
+
+    if (!online) {
+      setBlocked(true)
+      setStatus('idle')
+      return
+    }
 
     // The choice of what to reuse is made here, in code, out of the teacher's
     // own record — not by the model.
@@ -217,25 +253,22 @@ export default function App() {
 
   // The teacher edited the lesson, or changed something the lesson is checked
   // against. The checker looks again — the lesson is never taken on trust.
-  const runCheck = async (nextLesson, nextForm) => {
-    const number = ++checkNumber.current
-    setChecking(true)
-    try {
-      const result = await checkLesson({ lesson: nextLesson, form: nextForm })
-      if (number === checkNumber.current) {
-        setFeasibility(result.feasibility)
-        setRechecked(true)
-      }
-    } catch (failure) {
-      if (number === checkNumber.current) setError(failure.message)
-    } finally {
-      if (number === checkNumber.current) setChecking(false)
-    }
+  //
+  // The checker runs here, in the browser, on the same file the server runs.
+  // So this works with no internet at all, and the two can never disagree.
+  const runCheck = (nextLesson, nextForm) => {
+    const result = checkLocally(nextLesson, nextForm)
+    setFeasibility(result.feasibility)
+    setRechecked(true)
+    setChecking(false)
   }
 
   useEffect(() => {
     if (!lesson) return undefined
 
+    // Say "checking" straight away, so the panel never shows an old verdict
+    // as if it were the answer to what the teacher just changed.
+    setChecking(true)
     const timer = setTimeout(() => {
       runCheck(lesson, form)
     }, 350)
@@ -267,6 +300,13 @@ export default function App() {
         <p className="tagline">
           Lesson plans that fit the room you actually have.
         </p>
+        {!online && (
+          <p className="offline-note" role="status">
+            No internet connection. Village still opens, still checks your
+            lessons and still prints them — only writing a new lesson needs the
+            connection.
+          </p>
+        )}
       </header>
 
       <main className="sheet">
@@ -320,7 +360,23 @@ export default function App() {
               Add a curriculum objective and at least one material to enable this.
             </p>
           )}
+          {ready && !online && (
+            <p className="action-hint offline-hint">
+              A new lesson needs a connection. Your existing lessons can still be
+              checked, edited and printed.
+            </p>
+          )}
         </div>
+
+        {blocked && (
+          <div className="notice notice-error" role="alert">
+            <p className="notice-text">
+              Village needs a connection to write a new lesson. Everything else —
+              your shelf, your classroom record, the checks and the print-out —
+              still works without one.
+            </p>
+          </div>
+        )}
 
         {status === 'error' && (
           <div className="notice notice-error" role="alert">

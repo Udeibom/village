@@ -19,9 +19,34 @@ app.get('/api/health', (req, res) => {
 
 // Plain language for the teacher. The form they filled in stays on screen
 // either way — nothing they typed is lost when this fails.
+
+// A dead connection, rather than a model that answered badly.
+function isConnectionFailure(error) {
+  if (!error) return false
+  const code = String(error.code || '')
+  if (
+    ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNRESET'].includes(
+      code,
+    )
+  ) {
+    return true
+  }
+  if (error.name === 'APIConnectionError') return true
+  const message = String(error.message || '').toLowerCase()
+  return (
+    message.includes('connection error') ||
+    message.includes('fetch failed') ||
+    message.includes('network error')
+  )
+}
+
 function friendlyError(error) {
   if (error && error.code === 'missing_api_key') {
     return "Village has no Groq API key. Put GROQ_API_KEY in your .env file and restart the server."
+  }
+
+  if (isConnectionFailure(error)) {
+    return 'Village could not reach the AI service, which usually means this machine has no internet right now. Everything else still works — your classroom, your record and your checks.'
   }
 
   const status = error && (error.status || error.statusCode)

@@ -2,7 +2,7 @@
 //
 // The model is told to be strict about JSON and to describe what the lesson
 // needs. It is never asked whether the lesson is teachable: that judgement
-// belongs to server/validate.js.
+// belongs to shared/validate.js.
 
 import Groq from 'groq-sdk'
 

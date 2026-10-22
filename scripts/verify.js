@@ -4,8 +4,9 @@
 //   npm run verify
 
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { canGenerate, emptyForm, normalizeForm, toNumberOrNull } from '../src/lib/formRules.js'
-import { checkLesson, shortfalls, parseQuantity, objectivesMatch } from '../server/validate.js'
+import { checkLesson, shortfalls, parseQuantity, objectivesMatch } from '../shared/validate.js'
 import { findInDocument, documentLines } from '../shared/curriculum.js'
 import { validateLessonShape } from '../server/grok.js'
 import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
@@ -53,6 +54,7 @@ import {
   exampleInventory,
   exampleForm,
 } from '../server/fixtures/exampleLesson.js'
+import { checkLocally } from '../src/lib/localCheck.js'
 
 let passed = 0
 const failures = []
@@ -1209,6 +1211,26 @@ await acheck('the lesson that comes back fits the lesson, without the model know
   assert.equal(feasibility.timingFitted.fitted, true)
   assert.equal(feasibility.timingFitted.before, 55)
   assert.equal(feasibility.timingFitted.after, 35)
+})
+
+section('One kernel, two sides')
+check('the checker the browser runs is the checker the server runs', () => {
+  const fromServer = checkLesson(exampleLesson, exampleForm)
+  const fromBrowser = checkLocally(exampleLesson, exampleForm).feasibility
+  assert.deepEqual(fromBrowser, fromServer)
+})
+check('the server endpoint agrees with the kernel', () => {
+  const fromEndpoint = runCheck({ lesson: exampleLesson, form: exampleForm })
+    .feasibility
+  assert.deepEqual(fromEndpoint, checkLesson(exampleLesson, exampleForm))
+})
+check('the kernel needs no network, no model and no server-only code', () => {
+  // The file the browser imports is the file the server imports. Nothing in
+  // it may reach for Node, so a teacher with no internet still gets a check.
+  const source = readFileSync(new URL('../shared/validate.js', import.meta.url), 'utf8')
+  assert.equal(/from ['"]node:/.test(source), false)
+  assert.equal(/require\(/.test(source), false)
+  assert.equal(/process\./.test(source), false)
 })
 
 section('Re-checking an edited lesson')

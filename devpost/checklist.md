@@ -104,7 +104,7 @@ Build mode: fast
   Learner check: Paste the line from your curriculum document that this lesson covers, and watch the curriculum row quote it back.
   Commit: `Ground the curriculum check in the teacher's own document`
 
-- [ ] **11. The timings are fitted by code, not by the model's arithmetic**
+- [x] **11. The timings are fitted by code, not by the model's arithmetic**
   Becomes usable: When the activities do not fit the lesson, Village fits them to the stated duration in code — scaling the activity timings to the budget and saying so plainly — instead of leaving the arithmetic to a model that has already got it wrong once.
   Why now: The first live lesson in this build ran 40 minutes against a 35-minute lesson, and the model had no idea. The rebuild loop can fix that by asking again, but asking again is a model hoping harder; scaling the minutes is arithmetic.
   PRD ref: `prd.md > The timings are fitted by code`

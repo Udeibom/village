@@ -2,11 +2,22 @@
 // the server; the browser only ever talks to /api.
 
 async function postJson(path, body) {
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  let response
+  try {
+    response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    // The server on this machine is not answering. Say that plainly instead
+    // of showing a browser error message about the network.
+    const failure = new Error(
+      'Village could not reach the server on this machine. Is it still running?',
+    )
+    failure.offline = true
+    throw failure
+  }
 
   let payload = null
   try {

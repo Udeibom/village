@@ -41,36 +41,23 @@ Verification at the last commit:
 
 | Check | Result |
 | --- | --- |
-| `npm run verify` | 50 passed, 0 failed |
+| `npm run verify` | 51 passed, 0 failed |
 | `npm run browser-check` | 27 passed, 0 failed |
 | `npm run ai-check` (live Groq) | two lessons, both at exactly 35 minutes, both verdicts honest |
 
 ## What is left
 
-**1. The learning exercise (about two minutes).** It is the one thing the teacher has not
-done yet, and it is the most transferable thing in the project.
+**1. ~~The learning exercise~~ — done.** The learner chose to have the agent perform it
+rather than do it by hand, so it is recorded as a demonstrated recap rather than hands-on
+practice. The evidence: breaking the four-letter rule in `server/validate.js` →
+`matchingKey` made `npm run verify` fail on exactly the two cases that guard it
+(49 passed, 2 failed); restoring it returned the suite to 51 passed, 0 failed. The second
+regression case that made this visible is committed (`2be71a5`). The takeaway, in one line:
+*when a check fails on real output, decide which side is wrong before changing either — and
+make sure the check is capable of failing at all.*
 
-The story: a live Groq run produced an assessment that said it tested *"students will
-demonstrate understanding by correctly forming and comparing ratios"* while the teacher's
-objective was *"understand and represent ratios"*. The checker called that a mismatch and
-told the teacher the lesson needed attention. **It was wrong.** The fix was in
-`server/validate.js` → `matchingKey`: words are compared on their first four letters, so
-"comparing" and "compare" are the same word. The lesson: when a check fails on real output,
-decide which side is wrong before changing either — and make sure the check is capable of
-failing at all.
-
-Do it like this:
-
-1. Open `scripts/verify.js` and find the case *"an assessment that describes the objective in
-   its own words still counts"* (around line 286). That is the live failure, frozen into a test.
-2. Add one case of your own underneath it with a different word pair, and run
-   `npm run verify`. It should pass.
-3. Now break it on purpose: in `server/validate.js` line 43, change
-   `return word.length > 4 ? word.slice(0, 4) : word` to `return word`. Run `npm run verify`
-   and watch the suite fail — and read which case failed and why. Then put it back.
-
-**2. The app map** — `devpost/app-map.html` is generated and checked. Open it in a browser
-(`open devpost/app-map.html`).
+**2. The app map** — `devpost/app-map.html` is generated, checked and refreshed to cite the
+current commit. Open it in a browser (`open devpost/app-map.html`).
 
 **3. `6-ship`** — the demo video, the public GitHub repository, and your own Devpost
 submission. That skill picks up from `devpost/` and needs no help from this file.

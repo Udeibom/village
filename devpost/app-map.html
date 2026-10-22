@@ -90,10 +90,10 @@
         then checks its own work with plain JavaScript before it is allowed to say the lesson
         is ready to teach.
       </p>
-      <p class="lede">
-        Take-home reference, generated from the code at commit <code>717e06c</code>.
-        A snapshot — it can drift as the code changes.
-      </p>
+        <p class="lede">
+          Take-home reference, generated from the code at commit <code>2be71a5</code>.
+          A snapshot — it can drift as the code changes.
+        </p>
 
       <h2>The app in three pieces</h2>
       <div class="card">
@@ -260,8 +260,11 @@
         <p>
           <strong>Where it is kept:</strong> the live failure is a permanent case —
           <em>“an assessment that describes the objective in its own words still counts”</em> in
-          <code>scripts/verify.js</code>. Break <code>matchingKey</code> and that case fails,
-          which is how you know the check can fail at all.
+          <code>scripts/verify.js</code>, with a second case beside it
+          (<em>“an assessment that uses its own verbs still counts”</em>) covering a different
+          pair of words. Break <code>matchingKey</code> — change the four-letter rule back to
+          <code>return word</code> — and those two cases fail, which is how you know the check
+          can fail at all.
         </p>
         <p>
           <strong>How to reuse it:</strong> when a check fails on real output, decide which side
@@ -278,13 +281,13 @@ npm install
 cp .env.example .env     # then paste your GROQ_API_KEY into .env
 npm run dev             # page on http://localhost:5173, API on :3001</code></pre>
         <p style="margin-bottom: 0.3rem;">Checks, in the order worth running them:</p>
-        <pre><code>npm run verify         # 50 assertions on the rules — no browser, no API calls
+        <pre><code>npm run verify         # 51 assertions on the rules — no browser, no API calls
 npm run browser-check  # 27 checks driving the real app in headless Chrome (stubbed, free)
 npm run ai-check       # a live run against Groq — costs a little money</code></pre>
       </div>
 
       <footer>
-        Generated from the code at commit <code>717e06c</code>. Everything above is a snapshot
+        Generated from the code at commit <code>2be71a5</code>. Everything above is a snapshot
         of that commit; if the code moves on, the map can drift. The live app is the source of
         truth — start it and try the journey.
       </footer>

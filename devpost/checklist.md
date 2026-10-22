@@ -71,9 +71,9 @@ Build mode: fast
 - [x] Final review complete — feedback resolved and learner confirms ready to ship
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
-- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse — generated at commit `717e06c`, rendered in headless Chrome to confirm it is not blank and does not overflow, and checked for the offline rules the skill sets: no scripts, no network dependency, no secrets, balanced markup. The practice in the map is the real false negative from the live Groq run, with the fix (`matchingKey`) and the test that holds it in place.
+- [x] Learning activity complete — focused alternative, performed by the agent as a demonstration after the learner chose not to do the hands-on version: the live false negative (a rebuilt assessment that described the objective instead of quoting it, called a mismatch by the checker) was traced from the failing live output to `matchingKey` in `server/validate.js`, the repair was reproduced by breaking the four-letter rule — `npm run verify` failed on exactly the two cases that guard it, 49 passed and 2 failed — and the rule was restored to 51 passed, 0 failed. The learner's own hands-on exercise was declined and recorded as a recap, not as hands-on practice.
+- [x] Optional edit and transfer reflection addressed — the edit was made by the agent (a second regression case, "an assessment that uses its own verbs still counts") and committed; the optional transfer question was offered and declined, since the learner was leaving to do something else and the takeaway was delivered as the evidence above.
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse — generated and rendered in headless Chrome to confirm it is not blank and does not overflow, and checked for the offline rules the skill sets: no scripts, no network dependency, no secrets, balanced markup. Refreshed to cite commit `2be71a5` after the second regression case was added. The practice in the map is the real false negative from the live Groq run, with the fix (`matchingKey`) and the two tests that hold it in place.
 
 Activity and evidence:
 Route and stops:

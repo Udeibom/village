@@ -11,7 +11,7 @@ enough to continue.
 Your chat is stored on disk, so the quickest route is to resume it:
 
 ```bash
-cd /home/caleb/village
+cd village
 opencode --continue                              # pick up the last session in this folder
 ```
 
@@ -79,7 +79,7 @@ Two smaller pieces of housekeeping that `6-ship` may want:
 ## Running it again
 
 ```bash
-cd /home/caleb/village
+cd village
 npm install
 cp .env.example .env     # then paste your GROQ_API_KEY into .env
 npm run dev             # page on http://localhost:5173, API on :3001

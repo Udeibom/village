@@ -68,6 +68,10 @@ export default function App() {
   // Nothing is written to the shelf until the teacher changes something, so
   // an empty first visit does not overwrite what they had.
   const touched = useRef(false)
+  // Whether the teacher changed the lesson or the classroom since the last
+  // check. The panel only says "Village re-checked this after your change"
+  // when there really was a change to check.
+  const changed = useRef(false)
 
   // The connection comes and goes. Village says so, rather than letting the
   // teacher discover it by pressing Generate. The browser's online/offline
@@ -92,7 +96,9 @@ export default function App() {
     }
   }, [])
 
-  const handleChange = (field, value) => {    touched.current = true
+  const handleChange = (field, value) => {
+    touched.current = true
+    changed.current = true
     setForm((current) => {
       const next = { ...current, [field]: value }
       if (field === 'topic') next.learningObjective = value
@@ -102,6 +108,7 @@ export default function App() {
 
   const handleMaterialsChange = (materials) => {
     touched.current = true
+    changed.current = true
     setForm((current) => ({ ...current, materials }))
   }
 
@@ -123,6 +130,7 @@ export default function App() {
     setStatus('building')
     setError('')
     setRechecked(false)
+    changed.current = false
     setBanked(null)
     setReuse(null)
 
@@ -259,7 +267,9 @@ export default function App() {
   const runCheck = (nextLesson, nextForm) => {
     const result = checkLocally(nextLesson, nextForm)
     setFeasibility(result.feasibility)
-    setRechecked(true)
+    // The note says the teacher changed something. A fresh lesson is not a
+    // change, so the panel does not claim one.
+    setRechecked(changed.current)
     setChecking(false)
   }
 
@@ -394,7 +404,13 @@ export default function App() {
         {lesson && (
           <section className="result" aria-label="Lesson and feasibility">
             <div className="result-lesson">
-              <LessonPlan lesson={lesson} onEdit={setLesson} />
+              <LessonPlan
+                lesson={lesson}
+                onEdit={(next) => {
+                  changed.current = true
+                  setLesson(next)
+                }}
+              />
               <OutcomeStrip
                 key={lessonNumber}
                 onBank={handleOutcome}

@@ -2,9 +2,17 @@
 
 Lesson plans that fit the room you actually have.
 
-![Watch the demo](demo/village-demo.mp4)
+![The lesson and the panel that checked it](docs/screenshot.png)
+
+*The lesson on the left. On the right, the checker that read it: every
+material, the timings, the assessment, the curriculum line — and what it
+could not verify.*
 
 **Watch it work (1:29):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4>
+
+This was built for a classroom like the one it took to build it: a Kenyan
+Primary 6 class, 40 pupils, 35 minutes, no projector, no printing, no
+internet in the room. Bottle tops, beans, a few measuring cups.
 
 The planning documents this was built from, kept in the repository:
 
@@ -97,8 +105,8 @@ lesson needs it, and it says so plainly.
 ## Checks
 
 ```bash
-npm run verify         # 114 assertions on the rules (no browser, no API calls)
-npm run browser-check  # 50 checks driving the real app in headless Chrome
+npm run verify         # 118 assertions on the rules (no browser, no API calls)
+npm run browser-check  # 51 checks driving the real app in headless Chrome
 npm run ai-check       # a live run against Groq (costs a little money)
 ```
 
@@ -140,6 +148,35 @@ scripts/
 
 The division of labour matters: **the AI describes, the code checks.** The
 model is never asked to grade its own homework.
+
+## How it was built
+
+This was built with the Devpost Learn Skill Pack, in the order the pack lays
+out, and the documents each step produced are in this repository rather than
+in a notebook.
+
+| Step | What it decided | Where it is |
+| --- | --- | --- |
+| Scope | One lesson plan for one classroom, not a lesson-planning suite | [scope.md](devpost/scope.md) |
+| PRD | The journey, the behaviours, the states, and what the proof of concept does not do | [prd.md](devpost/prd.md) |
+| Spec | The stack, the file structure, the kernel, and the tests that would hold it | [spec.md](devpost/spec.md) |
+| Build | Twelve slices, each one verified before the next one started | [checklist.md](devpost/checklist.md) |
+| Ship | The demo, the licence, this repository, the submission | [where-we-are.md](devpost/where-we-are.md) |
+
+Two decisions came out of that process and are still visible in the code:
+
+- **The checker is one file, in plain JavaScript, with no AI in it.**
+  `shared/validate.js` is imported by the browser *and* by the server, so the
+  two can never disagree about whether a lesson is teachable.
+- **The build was cut into slices that each end in a passing check.** The
+  checklist names the check for every slice, and the false negative that a
+  live model run exposed — a material the teacher owned being reported as
+  missing because the model wrote it in the singular — is still in the
+  repository as a test.
+
+The demo video was recorded by a script in this repository
+([`demo/record-demo.mjs`](demo/record-demo.mjs)), so it can be re-made when
+the app changes.
 
 ## What Village does not do
 

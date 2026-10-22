@@ -569,6 +569,16 @@ check('the feasibility panel gives a verdict', async () => {
   }
 })
 
+check('a fresh lesson is not dressed up as a re-check', async () => {
+  // The panel says "Village re-checked this after your change" only when the
+  // teacher changed something. A lesson that has just been written is not a
+  // change, and claiming one would put a lie in front of the teacher.
+  const panelText = await page.text('.feasibility')
+  if (panelText.includes('re-checked this after your change')) {
+    throw new Error('the panel claims a re-check before anything was changed')
+  }
+})
+
 check('every material is checked against the inventory', async () => {
   const rows = await page.count('.material-check')
   if (rows !== INVENTORY.length) {

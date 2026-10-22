@@ -10,6 +10,15 @@ import { validateLessonShape } from '../server/grok.js'
 import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
 import { runCheck } from '../server/check.js'
 import {
+  addRecord,
+  findRecord,
+  isReusable,
+  makeRecord,
+  outcomeLabel,
+  removeRecord,
+  updateRecord,
+} from '../src/lib/bank.js'
+import {
   browserStorage,
   clearStore,
   formFromShelf,
@@ -278,6 +287,89 @@ check('an empty classroom is recognised as empty', () => {
 })
 check('the store has no browser outside a browser', () => {
   assert.equal(browserStorage(), null)
+})
+
+section('The classroom\'s record')
+check('a banked lesson keeps the classroom it was taught in', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+    note: 'the bean jars were the hit',
+    id: 'record-1',
+    date: '2026-10-20T09:00:00.000Z',
+  })
+  assert.equal(record.title, exampleLesson.title)
+  assert.equal(record.classSize, exampleForm.classSize)
+  assert.equal(record.durationMinutes, exampleForm.durationMinutes)
+  assert.equal(record.materials.length, exampleForm.materials.length)
+  assert.equal(record.materials[0].name, 'bottle tops')
+  assert.equal(record.note, 'the bean jars were the hit')
+  assert.equal(outcomeLabel(record.outcome), 'Worked')
+})
+check('a lesson the teacher taught and says worked is proved', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'worked',
+  })
+  assert.equal(isReusable(record), true)
+})
+check('a lesson that needed changes is never reused', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'changes',
+  })
+  assert.equal(isReusable(record), false)
+})
+check('a lesson that did not work is never reused', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: 'failed',
+  })
+  assert.equal(isReusable(record), false)
+})
+check('a lesson from a colleague is a candidate, not a claim', () => {
+  const record = makeRecord({
+    lesson: exampleLesson,
+    form: exampleForm,
+    outcome: '',
+    source: 'colleague',
+  })
+  assert.equal(record.verified, false)
+  assert.equal(isReusable(record), false)
+
+  // It becomes reusable only once this teacher has taught it and said so.
+  const proved = updateRecord([record], record.id, {
+    outcome: 'worked',
+    verified: true,
+  })
+  assert.equal(isReusable(findRecord(proved, record.id)), true)
+})
+check('the record keeps the newest lesson first', () => {
+  const first = makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'worked' })
+  const second = makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'worked' })
+  const bank = addRecord(addRecord([], first), second)
+  assert.equal(bank.length, 2)
+  assert.equal(bank[0].id, second.id)
+  assert.equal(findRecord(bank, first.id).id, first.id)
+})
+check('a record can be changed or taken out', () => {
+  const record = makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'failed' })
+  const bank = addRecord([], record)
+  const changed = updateRecord(bank, record.id, { outcome: 'worked', verified: true })
+  assert.equal(isReusable(findRecord(changed, record.id)), true)
+  assert.equal(removeRecord(changed, record.id).length, 0)
+})
+check('the record is kept on the device like everything else', () => {
+  const storage = fakeStorage()
+  const record = makeRecord({ lesson: exampleLesson, form: exampleForm, outcome: 'worked' })
+  writeStore(storage, STORE_KEYS.bank, [record])
+  const bank = readStore(storage, STORE_KEYS.bank, [])
+  assert.equal(bank.length, 1)
+  assert.equal(bank[0].outcome, 'worked')
 })
 
 section('The feasibility checker — materials')

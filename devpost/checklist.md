@@ -59,7 +59,7 @@ Build mode: fast
   Learner check: Print or save the page as PDF and look at it as a sheet of paper you would hand to a colleague — is the lesson and its feasibility panel everything you need on one page?
   Commit: `Add the print view and finish the README`
 
-- [ ] **6. The shelf and the classroom's history live on the teacher's machine**
+- [x] **6. The shelf and the classroom's history live on the teacher's machine**
   Becomes usable: The teacher's own inputs — grade, subject, objective, class size, duration, constraints and every material row — are saved on their own machine and restored the next time they open Village. Nothing is seeded: the history is whatever they actually did.
   Why now: Every slice after this one depends on a place to put the shelf and the history. It is also the cheapest possible slice with the largest visible effect — the second time the teacher opens the app, their classroom is already there.
   PRD ref: `prd.md > The shelf and the classroom's history live on the teacher's machine`, `prd.md > States and Boundaries` (local data only)

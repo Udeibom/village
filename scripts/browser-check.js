@@ -810,13 +810,80 @@ check('the app says where the classroom is kept', async () => {
   if (!note.includes('not sent to any service')) {
     throw new Error(`the note does not say it is not sent anywhere: "${note}"`)
   }
-  if (!(await page.isVisible('.button-forget'))) {
+  if (!(await page.isVisible('.button-forget-shelf'))) {
     throw new Error('there is no way to forget the classroom')
   }
 })
 
+check('the classroom starts with an empty record', async () => {
+  const empty = await page.text('.bank-panel .empty-note')
+  if (!empty) throw new Error('the record does not say it is empty')
+  if (!empty.includes('Nothing from this classroom yet')) {
+    throw new Error(`the record does not say it is empty: "${empty}"`)
+  }
+  const entries = await page.count('.bank-entry')
+  if (entries !== 0) throw new Error(`expected no banked lessons, got ${entries}`)
+})
+
+check('the teacher is asked how the lesson went', async () => {
+  // The form came back with the shelf after the reload above, so it is ready
+  // to generate — there is no need to type it in again.
+  await page.click('button.button-primary')
+  await page.waitForSelector('.result-lesson .lesson-title', 20000)
+
+  const question = await page.text('.outcome-question')
+  if (!question) throw new Error('the app does not ask how the lesson went')
+  if (!question.includes('How did it go')) {
+    throw new Error(`the app does not ask how it went: "${question}"`)
+  }
+  const choices = await page.count('.button-outcome')
+  if (choices !== 3) throw new Error(`expected 3 choices, got ${choices}`)
+})
+
+check('marking a lesson as worked banks it in the classroom\'s record', async () => {
+  await page.fill('input[name="outcomeNote"]', 'the bean jars were the hit')
+  await page.click('.button-outcome.outcome-worked')
+  await sleep(200)
+
+  const entries = await page.count('.bank-entry')
+  if (entries !== 1) throw new Error(`expected 1 banked lesson, got ${entries}`)
+
+  const entry = await page.text('.bank-entry')
+  if (!entry.includes('Worked')) {
+    throw new Error(`the record does not say it worked: "${entry}"`)
+  }
+  if (!entry.includes('the bean jars were the hit')) {
+    throw new Error(`the record does not keep the note: "${entry}"`)
+  }
+  if (!entry.includes('40 pupils')) {
+    throw new Error(`the record does not say how many pupils: "${entry}"`)
+  }
+})
+
+check('the banked lesson is still there after a reload', async () => {
+  await page.goto(APP_URL)
+  await page.waitForSelector('button.button-primary')
+  const entries = await page.count('.bank-entry')
+  if (entries !== 1) throw new Error(`expected 1 banked lesson, got ${entries}`)
+  const entry = await page.text('.bank-entry')
+  if (!entry.includes('the bean jars were the hit')) {
+    throw new Error(`the record lost the note: "${entry}"`)
+  }
+})
+
+check('the teacher can take a lesson out of the record', async () => {
+  await page.goto(APP_URL)
+  await page.waitForSelector('button.button-primary')
+  const entries = await page.count('.bank-entry')
+  if (entries !== 1) throw new Error(`expected 1 banked lesson, got ${entries}`)
+  await page.click('.bank-entry .button-forget-record')
+  await sleep(200)
+  const after = await page.count('.bank-entry')
+  if (after !== 0) throw new Error(`expected no banked lessons, got ${after}`)
+})
+
 check('the teacher can forget their classroom', async () => {
-  await page.click('.button-forget')
+  await page.click('.button-forget-shelf')
   await sleep(200)
   const topic = await page.evaluate(
     () => document.querySelector('input[name="topic"]').value,

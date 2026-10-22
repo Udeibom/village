@@ -5,7 +5,10 @@ import MaterialsList from './components/MaterialsList.jsx'
 import LessonPlan from './components/LessonPlan.jsx'
 import FeasibilityPanel from './components/FeasibilityPanel.jsx'
 import PrintView from './components/PrintView.jsx'
+import OutcomeStrip from './components/OutcomeStrip.jsx'
+import BankPanel from './components/BankPanel.jsx'
 import { canGenerate, emptyForm, normalizeForm } from './lib/formRules.js'
+import { addRecord, makeRecord, removeRecord } from './lib/bank.js'
 import {
   browserStorage,
   clearStore,
@@ -35,6 +38,12 @@ export default function App() {
   const [checking, setChecking] = useState(false)
   const [rechecked, setRechecked] = useState(false)
   const [printing, setPrinting] = useState(false)
+  // The classroom's record of what was actually taught.
+  const [bank, setBank] = useState(() =>
+    readStore(browserStorage(), STORE_KEYS.bank, []),
+  )
+  const [banked, setBanked] = useState(null)
+  const [lessonNumber, setLessonNumber] = useState(0)
   const checkNumber = useRef(0)
   // Nothing is written to the shelf until the teacher changes something, so
   // an empty first visit does not overwrite what they had.
@@ -72,15 +81,37 @@ export default function App() {
     setStatus('building')
     setError('')
     setRechecked(false)
+    setBanked(null)
     try {
       const result = await generateLesson(normalizeForm(form))
       setLesson(result.lesson)
       setFeasibility(result.feasibility)
+      setLessonNumber((number) => number + 1)
       setStatus('idle')
     } catch (failure) {
       setError(failure.message)
       setStatus('error')
     }
+  }
+
+  // "How did it go?" — the answer is kept with the lesson, on this device.
+  const handleOutcome = (outcome, note) => {
+    if (!outcome) {
+      setBanked(null)
+      return
+    }
+    const record = makeRecord({ lesson, form, outcome, note })
+    const next = addRecord(bank, record)
+    setBank(next)
+    writeStore(browserStorage(), STORE_KEYS.bank, next)
+    setBanked(record)
+  }
+
+  const forgetRecord = (id) => {
+    const next = removeRecord(bank, id)
+    setBank(next)
+    writeStore(browserStorage(), STORE_KEYS.bank, next)
+    if (banked && banked.id === id) setBanked(null)
   }
 
   // The teacher edited the lesson, or changed something the lesson is checked
@@ -154,7 +185,7 @@ export default function App() {
           {remembered && (
             <button
               type="button"
-              className="button-quiet button-forget"
+              className="button-quiet button-forget button-forget-shelf"
               onClick={forgetShelf}
             >
               Forget this classroom
@@ -203,6 +234,11 @@ export default function App() {
           <section className="result" aria-label="Lesson and feasibility">
             <div className="result-lesson">
               <LessonPlan lesson={lesson} onEdit={setLesson} />
+              <OutcomeStrip
+                key={lessonNumber}
+                onBank={handleOutcome}
+                banked={banked}
+              />
             </div>
             <div className="result-panel">
               <FeasibilityPanel
@@ -213,6 +249,8 @@ export default function App() {
             </div>
           </section>
         )}
+
+        <BankPanel bank={bank} onForget={forgetRecord} />
       </main>
     </div>
   )

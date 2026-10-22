@@ -212,6 +212,132 @@ textarea::placeholder {
   color: var(--ink-soft);
 }
 
+/* ------------------------------------------------------------- how it went */
+
+.outcome {
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--paper-raised);
+}
+
+.outcome-question {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+}
+
+.outcome-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.button-outcome {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.button-outcome:hover {
+  background: var(--paper-sunk);
+}
+
+.outcome-worked {
+  border-left-color: var(--moss);
+}
+
+.outcome-changes {
+  border-left-color: var(--clay);
+}
+
+.outcome-failed {
+  border-left-color: var(--ink-faint);
+}
+
+.button-outcome.picked {
+  background: var(--paper-sunk);
+  font-weight: 600;
+}
+
+.outcome-note-field {
+  margin-bottom: 0.6rem;
+}
+
+.outcome-note {
+  margin: 0 0 0.3rem;
+  color: var(--moss);
+  font-size: 0.93rem;
+}
+
+/* ------------------------------------------------------- the class record */
+
+.bank-panel {
+  margin-top: 1.75rem;
+}
+
+.bank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bank-entry {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: 5px;
+  background: var(--paper-raised);
+}
+
+.bank-entry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bank-title {
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+}
+
+.bank-outcome {
+  flex: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  border-left-width: 4px;
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
+.bank-meta {
+  margin: 0.25rem 0 0;
+  color: var(--ink-faint);
+  font-size: 0.84rem;
+}
+
+.bank-note {
+  margin: 0.4rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
 .button-primary {
   font-family: var(--font-body);
   font-size: 1rem;

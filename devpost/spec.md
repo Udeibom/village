@@ -130,25 +130,39 @@ All state is in-memory (React state + request payloads). Nothing stored server-s
 
 ```
 village/
+├── shared/
+│   └── validate.js     # the kernel — pure, no imports; run by the server AND the browser
 ├── server/
 │   ├── index.js        # Express: /api/generate, /api/check, loop orchestration
 │   ├── groq.js         # Groq client, prompts, JSON parsing
-│   └── validate.js     # deterministic feasibility checker (the kernel)
+│   ├── rebuild.js      # write → check → rebuild → check again
+│   ├── check.js        # re-check an edited lesson without writing a new one
+│   ├── curriculum.js   # find the teacher's objective in the teacher's own document
+│   ├── timing.js       # fit activity timings to the lesson's budget in code
+│   └── stub.js         # a fixed lesson, so the browser check is free and deterministic
 ├── src/
 │   ├── main.jsx
 │   ├── App.jsx         # page state, generate/check calls
 │   ├── api.js          # fetch wrappers to /api/*
 │   ├── styles.css      # paper-and-chalk styling + print styles
+│   ├── lib/
+│   │   ├── formRules.js  # when Generate is enabled
+│   │   ├── store.js      # localStorage: shelf, bank, curriculum document
+│   │   └── reuse.js      # which banked activity fits this lesson
 │   └── components/
 │       ├── LessonRequestForm.jsx
 │       ├── RealityForm.jsx
 │       ├── MaterialsList.jsx
 │       ├── LessonPlan.jsx      # render + in-place edit
 │       ├── FeasibilityPanel.jsx
+│       ├── OutcomeStrip.jsx    # "how did it go?"
+│       ├── BankPanel.jsx       # this classroom's record
+│       ├── CurriculumDocument.jsx
 │       └── PrintView.jsx
 ├── scripts/
 │   ├── verify.js       # assertions on the checker's pure logic (npm run verify)
-│   └── browser-check.js # drives the real UI in headless Chrome (npm run browser-check)
+│   ├── browser-check.js # drives the real UI in headless Chrome (npm run browser-check)
+│   └── ai-check.js     # a live run against Groq (npm run ai-check)
 ├── index.html
 ├── package.json
 ├── .env.example        # GROQ_API_KEY=your_key_here

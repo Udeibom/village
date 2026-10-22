@@ -59,6 +59,69 @@ Build mode: fast
   Learner check: Print or save the page as PDF and look at it as a sheet of paper you would hand to a colleague — is the lesson and its feasibility panel everything you need on one page?
   Commit: `Add the print view and finish the README`
 
+- [ ] **6. The shelf and the classroom's history live on the teacher's machine**
+  Becomes usable: The teacher's own inputs — grade, subject, objective, class size, duration, constraints and every material row — are saved on their own machine and restored the next time they open Village. Nothing is seeded: the history is whatever they actually did.
+  Why now: Every slice after this one depends on a place to put the shelf and the history. It is also the cheapest possible slice with the largest visible effect — the second time the teacher opens the app, their classroom is already there.
+  PRD ref: `prd.md > The shelf and the classroom's history live on the teacher's machine`, `prd.md > States and Boundaries` (local data only)
+  Build: `src/lib/store.js` — a small localStorage layer with a version key, safe reads (a corrupt or unreadable store must never break the page), and separate keys for the shelf, the bank and the curriculum document. The form hydrates from the store on load and writes back as it changes. A quiet line under the materials list says where the data is kept and that it stays on this machine.
+  Verify (mechanical): `npm run verify` asserts the store's pure helpers — a round trip, a corrupt payload falling back to empty rather than throwing, a version mismatch being ignored; `npm run browser-check` fills the form, reloads the page, and asserts the form comes back filled, and asserts a second browser context (clean storage) starts empty.
+  Learner check: Fill the form, refresh, and see your classroom still there. Then check where the data is kept.
+  Commit: `Remember the shelf on the teacher's own machine`
+
+- [ ] **7. "How did it go?" — the classroom's playbook**
+  Becomes usable: After a lesson, the teacher answers one question — *worked*, *needed changes*, or *didn't work*, optionally adding what was actually missing — and that answer is banked with the lesson, the shelf it was built for, the class size and the date.
+  Why now: The bank's only value comes from the teacher's verdict on it. Without the verdict it is a log; with it, it is a record of what works in this room.
+  PRD ref: `prd.md > "How did it go?" — the classroom's playbook`, `prd.md > States and Boundaries` (first run, empty bank)
+  Build: an outcome strip under the lesson with the three verdicts and an optional note field; a bank record (`id`, `lesson`, `form`, `materials`, `outcome`, `note`, `date`, `source`); a "Your classroom's record" panel listing banked lessons with their outcome, and a "nothing from this classroom yet" empty state.
+  Verify (mechanical): `npm run verify` asserts the bank record's shape and that a lesson marked *didn't work* is never a reuse candidate; `npm run browser-check` marks a lesson as worked, reloads, and asserts the bank still lists it with the outcome.
+  Learner check: Mark the lesson you just read as "worked", reload, and look at the record of your classroom.
+  Commit: `Bank the lessons that worked`
+
+- [ ] **8. The next lesson is planned around what worked before**
+  Becomes usable: When the teacher plans again, Village looks through the bank for activities that fit the current shelf, class size, duration and objective and that the teacher marked as working — and the new lesson is built around the proven activity, with a line saying where it came from.
+  Why now: This is the promise that makes the bank worth anything, and the answer to "why not a chat window": the selection happens in code against this classroom's own record, and the panel shows the source.
+  PRD ref: `prd.md > Planning the next lesson around what worked before`
+  Build: `src/lib/reuse.js` — deterministic retrieval: match a banked lesson on shelf fingerprint (the same material names), class-size band, duration band and objective keywords; refuse anything marked *didn't work*, imported-but-unverified, or from a much bigger class. The chosen activity is passed to the generation prompt as a preferred activity; the panel shows a provenance line (which lesson, when, with what class) and the lesson records what was reused.
+  Verify (mechanical): `npm run verify` asserts retrieval picks the right banked activity for the same shelf and objective, refuses a *didn't work* lesson, refuses one from a different shelf, refuses one for a much larger class, and prefers the most recent; `npm run browser-check` banks a lesson, changes the topic, generates again, and asserts the new lesson names the reused activity and where it came from.
+  Learner check: Bank the ratios lesson as "worked", change the topic to fractions, generate again, and look for the line saying where the activity came from.
+  Commit: `Plan the next lesson around what worked before`
+
+- [ ] **9. A proven lesson can travel to another teacher**
+  Becomes usable: A banked lesson exports as one small file. A colleague imports it and it enters their bank marked as a candidate from a colleague — not yet verified in their classroom.
+  Why now: It is the smallest slice in the plan and it is the one that makes the bank worth something beyond one machine: a proven activity can travel to another teacher who has the same shelf, with no server and no account.
+  PRD ref: `prd.md > A proven lesson can travel`
+  Build: export a banked lesson to a `.json` file (download) and import one (file input); validate the imported file strictly — a file that is not a Village lesson card is refused with a plain message, never half-loaded; an imported lesson is stored with `source: 'colleague'` and `verified: false`, and is never used as a reuse candidate until the teacher verifies it.
+  Verify (mechanical): `npm run verify` asserts a card round-trips through export and import unchanged, that a malformed card is refused, and that an imported card is not a reuse candidate until verified; `npm run browser-check` exports a banked lesson, clears the app, imports the file, and asserts it appears in the bank marked as a colleague's.
+  Learner check: Export the lesson you banked, import it as if you were a colleague, and see how it is labelled.
+  Commit: `Let a proven lesson travel to another teacher`
+
+- [ ] **10. The curriculum check uses the teacher's own document**
+  Becomes usable: The teacher pastes or uploads their curriculum extract. Village searches that document for the objective and quotes the line it found, so the curriculum row stops being "unverified" and becomes a grounded claim — or an honest "I could not find that in the document you gave me".
+  Why now: "Curriculum" is in the product's name, and right now the curriculum row is the one check that can never pass. It is also the check a chat window cannot make honestly, because a model's memory of a curriculum is not citable.
+  PRD ref: `prd.md > The curriculum check uses the teacher's own document`
+  Build: a curriculum document field (paste, or upload a `.txt`/`.md` file); `server/curriculum.js` — extract candidate lines, match the objective against them with the same word-key machinery the checker already uses, and return the best line with its source; the curriculum check prefers the document's answer over the model's own claim whenever a document is present, and keeps saying "unverified" when there is none.
+  Verify (mechanical): `npm run verify` asserts the right line is found for a ratios objective, an unrelated document is not matched, a document that does not contain the objective is reported as not found rather than matched, and an empty document leaves the check unverified; `npm run browser-check` pastes a curriculum line and asserts the row flips to a grounded claim quoting it.
+  Learner check: Paste the line from your curriculum document that this lesson covers, and watch the curriculum row quote it back.
+  Commit: `Ground the curriculum check in the teacher's own document`
+
+- [ ] **11. The timings are fitted by code, not by the model's arithmetic**
+  Becomes usable: When the activities do not fit the lesson, Village fits them to the stated duration in code — scaling the activity timings to the budget and saying so plainly — instead of leaving the arithmetic to a model that has already got it wrong once.
+  Why now: The first live lesson in this build ran 40 minutes against a 35-minute lesson, and the model had no idea. The rebuild loop can fix that by asking again, but asking again is a model hoping harder; scaling the minutes is arithmetic.
+  PRD ref: `prd.md > The timings are fitted by code`
+  Build: `server/timing.js` — `fitActivitiesToBudget(activities, minutes)` scales the activity durations proportionally onto the budget, keeps their order, and reports what it changed; the generate path applies it when the timing check fails and before the rebuild is considered; the panel shows a line saying the timings were fitted and by how much.
+  Verify (mechanical): `npm run verify` asserts 40 minutes of activities fitted to 35 sums to exactly 35, that the order and the activity count are unchanged, that a lesson already within budget is not touched, and that a lesson with a single activity still gets the whole budget; `npm run browser-check` asserts the stub's over-long lesson comes back exactly on budget and the panel says it was fitted.
+  Learner check: Generate a lesson and look at the timings — do they land exactly on your 35 minutes, and does the panel say when it had to fit them?
+  Commit: `Fit the activity timings to the lesson with code`
+
+- [ ] **12. The app works with no internet**
+  Becomes usable: With no connection, Village still opens, still has the teacher's shelf and bank, still checks and edits a lesson, and still prints it. Only generating a new lesson needs the connection, and it says so plainly instead of failing.
+  Why now: The target classroom may have no internet at all. Right now every check runs on the server, so an edit made offline could not be re-checked — which would mean showing a stale verdict, the one thing this product must never do.
+  PRD ref: `prd.md > Works with no internet`, `prd.md > States and Boundaries` (no internet)
+  Build: move the checker to `shared/validate.js` so the browser and the server run the same kernel (no imports, no Node APIs — it is already pure), and have the client check locally; the local server keeps its own copy for `/api/check`; a failed generation call that looks like a dead connection produces a plain message about the connection, not a generic error; an offline indicator appears when the app knows it has no connection.
+  Verify (mechanical): `npm run verify` runs the same shared checker the browser runs, unchanged, and still passes every case; `npm run browser-check` with the network disabled (CDP network emulation) asserts the app still loads, the shelf and bank are present, a lesson can be checked and edited locally, the print view opens, and the Generate button explains that a new lesson needs a connection.
+  Learner check: Turn off your wifi, open Village, and check a lesson you already have.
+  Commit: `Make the app work with no internet`
+
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — after slice 1: the teacher filled the real form and gave feedback on the paper-and-chalk look and the wording of the inputs. Outcome: field names confirmed as good for a teacher; the exercise-book styling was tried and rejected and reverted to the warm card layout, so the panel — not the page furniture — carries the paper-and-chalk character from here on

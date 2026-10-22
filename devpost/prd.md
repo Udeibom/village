@@ -18,6 +18,11 @@ Source: `scope.md > The Core Loop`, `scope.md > The Unique Kernel`, `scope.md > 
 6. If any check fails, the AI **rebuilds the lesson around what is actually available** — it does not merely flag the problem and stop.
 7. The teacher edits the lesson text directly if they wish. Every edit triggers a re-check; the teacher's edits are never blindly trusted.
 8. They hit **Print / Export** and get a clean printable version of the lesson with the feasibility panel attached.
+9. They answer one question — **"How did it go?"** — with *worked*, *needed changes*, or *didn't work*, optionally adding what was missing. The lesson and that answer are banked on their own machine.
+10. Next time they plan a lesson, Village looks through what this classroom has actually proved, and the generated lesson is built around an activity that worked before, with a line saying where it came from.
+11. A banked lesson can be exported as one small file and given to a colleague, who imports it into their own bank as a candidate they have not yet verified.
+12. If the teacher pastes their own curriculum document, the curriculum check stops being "unverified" and becomes a grounded claim: the document's own words, quoted back, or an honest "I could not find that in the document you gave me".
+13. Everything except generating a new lesson works with no internet: the shelf, the bank, the checks, the edits and the printable page are all on the teacher's own machine.
 
 ## Screens and Layout
 
@@ -57,6 +62,27 @@ Every activity's text is editable in place. After any edit, the re-check runs ag
 ### Export
 Print / Export produces a clean printable version of the lesson with the feasibility panel included.
 
+### The shelf and the classroom's history live on the teacher's machine
+The teacher's own inputs — grade, subject, objective, class size, duration, constraints, and every material row with its quantity — are saved on their own machine and restored the next time they open Village. Nothing is sent anywhere but the local server, and nothing is stored on a service the teacher did not choose.
+
+### "How did it go?" — the classroom's playbook
+After a lesson, the teacher is asked one question: *worked*, *needed changes*, or *didn't work*, optionally adding what was actually missing. The lesson, its inventory, the class size it was built for, and that answer are banked locally. The bank is the app's memory of this classroom, and it is the teacher's own data on their own machine.
+
+### Planning the next lesson around what worked before
+When a new lesson is generated, Village looks through the bank and looks for activities that fit the current shelf, class size, duration and objective — and that the teacher marked as working. The selection is done in code, not by the model: same shelf, similar class, similar objective, and a lesson that worked. The generated lesson is built around the proven activity, and the panel says where it came from: which lesson, when, and with what class. A lesson the teacher marked as *didn't work* is never reused, and neither is one from a different shelf or a much larger class.
+
+### A proven lesson can travel
+A banked lesson can be exported as one small file and given to another teacher, who imports it into their own bank. An imported lesson is marked as coming from a colleague and as not yet verified in that classroom — it is a candidate, not a claim.
+
+### The curriculum check uses the teacher's own document
+If the teacher pastes or uploads their curriculum extract, Village searches that document for the objective and quotes the line it found. The curriculum row then reports a grounded claim — the document's own words — or an honest "I could not find that in the document you gave me". When a document is present, the model's own claim about curriculum alignment no longer decides that row. With no document, the row keeps saying "curriculum match unverified", because Village still cannot confirm it.
+
+### The timings are fitted by code
+When the activities do not fit the lesson, Village fits them to the stated duration in code — scaling the activity timings to the budget and saying so plainly — rather than leaving it to a model's arithmetic. The teacher's content is not changed; the minutes are, and the change is visible.
+
+### Works with no internet
+Village runs on the teacher's own machine. With no connection, the shelf, the bank, every check, every edit and the printable page all keep working. Only generating a new lesson needs the connection, and Village says so plainly instead of failing silently.
+
 ## States and Boundaries
 
 - **First use / empty state** — blank forms; Generate disabled until curriculum objective and at least one material are filled in.
@@ -64,7 +90,10 @@ Print / Export produces a clean printable version of the lesson with the feasibi
 - **Generation failure** — plain-language error plus a Try again button; **all entered form data is preserved, never lost**.
 - **Shortage detected** — verdict shows Needs attention, the shortfall is named ("short by 8 bottle tops"), and the AI rebuilds automatically.
 - **Manual edit** — triggers re-check; results update in place; no blind trust in edits.
-- **Nothing persisted between sessions** (deferred: saved inventory, history). Refresh starts clean.
+- **First run** — the shelf and the bank are empty, and the app says so plainly ("nothing from this classroom yet"). No demonstration data is ever seeded: the history is whatever the teacher actually did.
+- **Empty bank** — generating a first lesson works exactly as before. Reuse only appears once there is something worth reusing.
+- **No internet** — the app still opens, restores the shelf and the bank, checks and edits lessons, and prints. The Generate button explains that a new lesson needs a connection.
+- **Local data only** — the shelf, the bank and the curriculum document stay on the teacher's machine. Clearing the browser's data clears them, and the app says where they are kept.
 
 ## Product Decisions
 
@@ -89,20 +118,30 @@ Print / Export produces a clean printable version of the lesson with the feasibi
 - In-place editing with automatic re-check.
 - Print / Export including the feasibility panel.
 - Warm paper-and-chalk visual style.
+- The shelf and the classroom's bank, saved on the teacher's own machine and restored next time.
+- "How did it go?" — the teacher's verdict on a lesson, banked locally.
+- Reuse of proven activities in the next lesson, chosen in code, with visible provenance.
+- Export and import of a proven lesson as one small file.
+- The curriculum check grounded in the teacher's own document, quoted back, or honestly "not found".
+- Activity timings fitted to the lesson's duration by code.
+- The whole app usable with no internet; only generation needs the connection.
 
 ## Deferred From the POC
 
-Each named in `scope.md > Later`; not built this weekend, not deleted from the vision: curriculum document upload/parsing, curriculum web search, saved resource inventory across sessions, photographing materials, teacher feedback loop, objective-to-assessment trace as its own visualization, multi-lesson history.
+Each named in `scope.md > Later`; not built this weekend, not deleted from the vision: curriculum web search, photographing materials, objective-to-assessment trace as its own visualization, broader grade/subject/curriculum coverage.
+
+**Now built (moved out of "Later"):** curriculum document upload and parsing (the teacher pastes or uploads their extract and the curriculum row becomes a grounded, quoted claim), saved resource inventory across sessions, the teacher feedback loop ("how did it go?") and the multi-lesson history it produces, and a portable lesson file that carries a proven lesson to a colleague.
 
 ## Possible Later Enhancements
 
-Reusable material inventory the teacher maintains across lessons; photo of the shelf as input; "how did it go?" feedback that learns which activities work in which rooms; a visual map from objective to assessment activity.
+Photo of the shelf as input (with the teacher correcting the suggestion); curriculum web search; a visual map from objective to assessment activity; syncing the shelf across a teacher's machines; the bank shared between colleagues on a school's own server.
 
 ## Non-Goals
 
 - Not an AI lesson generator that hopes for the best — feasibility must be verified, never assumed (`scope.md > The Unique Kernel`).
-- No accounts, login, or multi-user features.
-- No deployment/hosting requirements for the demo — running locally is fine.
+- No accounts, login, or multi-user features. Sharing is a file the teacher hands over, not a network.
+- No seeded demonstration data anywhere in the product. The history is real history.
+- No deployment/hosting requirements for the demo — running locally is fine. (Offline means the machine has no connection to the internet, not that the app is hosted.)
 - No attempt to be an authority on curriculum compliance; the app only reports what it can verify and flags what it can't.
 - No fixed five-part lesson template.
 

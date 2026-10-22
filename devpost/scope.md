@@ -21,8 +21,11 @@ Any teacher — primary or secondary — with a real room full of pupils and a s
 2. Declare the reality: class size, duration, constraints (no electricity, no printing, no internet), and available materials with quantities.
 3. Generate a resource-grounded lesson: introduction, hands-on activity, guided practice, independent assessment, adaptations — each activity naming the materials it uses, how much, and how to check understanding.
 4. Validate before teaching: material requirements satisfied, timing plausible, assessment traces to the stated objective, uncertainty flagged — then the teacher reviews, edits, and exports.
+5. Say how it went: *worked*, *needed changes*, or *didn't work* — banked on the teacher's own machine, with the shelf, the class size and the outcome.
+6. Plan the next one around what worked: the proven activity is found in code and reused, and the panel says where it came from.
+7. Take it further: the lesson travels to a colleague as one file, the curriculum check quotes the teacher's own document, and the whole app works with no internet.
 
-Why they come back: the plan is usable tomorrow, and it's honest about what's missing.
+Why they come back: the plan is usable tomorrow, it is honest about what is missing, and it gets better with every lesson they have actually taught.
 
 ## Inspiration & Identity
 
@@ -55,19 +58,26 @@ In:
 - Per-activity display of which confirmed materials it uses
 - Feasibility validation: materials available in sufficient quantity, timing estimate, assessment-objective alignment, explicit uncertainty flags on curriculum claims ("aligned to the objective you provided" vs. "curriculum match unverified")
 - Edit and export/print the final lesson plan
+- The teacher's own shelf saved on their machine and restored next time
+- "How did it go?" — the teacher's verdict on a lesson, banked locally, with no demonstration data ever seeded
+- Reuse of proven activities in the next lesson, chosen in code, with the source shown
+- Export and import of a proven lesson as one small file a colleague can hand over
+- The curriculum check grounded in the teacher's own document — quoted back, or honestly "not found"
+- Activity timings fitted to the stated duration in code, with the adjustment shown
+- The whole app working with no internet; only generating a new lesson needs the connection
 
 ## Later
 
-- Curriculum document upload and parsing
 - Curriculum web search
-- Reusable saved resource inventory across sessions
-- Photographing materials as input
-- Teacher feedback loop (did it work, what was missing, what to change next time)
+- Photographing materials as input (with the teacher correcting the suggestion)
 - Objective-to-assessment trace as its own visualization
 - Broader grade/subject/curriculum coverage
+- Syncing the shelf and bank across a teacher's machines; a school server holding the shared bank
 
 *(All named in `village.md`, which remains the full vision — "later" means not built this weekend, not deleted.)*
 
 ## Explicitly Cut
 
 Nothing is cut from `village.md`'s vision — the learner was explicit that nothing gets removed. Items listed under **Later** are deferred implementations, not discarded requirements.
+
+**Built this weekend, and no longer "Later":** saved resource inventory across sessions, the teacher feedback loop, the multi-lesson history it produces, curriculum document upload and parsing, and a portable proven-lesson file. These were the parts of `village.md` that a chat window structurally cannot do — a stateless model has no memory of a classroom, no curriculum document to quote, and no way to carry a proven lesson to the next teacher. They are now the product's spine, not its packaging.

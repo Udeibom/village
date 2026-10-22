@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import LessonRequestForm from './components/LessonRequestForm.jsx'
+import CurriculumDocument from './components/CurriculumDocument.jsx'
 import RealityForm from './components/RealityForm.jsx'
 import MaterialsList from './components/MaterialsList.jsx'
 import LessonPlan from './components/LessonPlan.jsx'
@@ -241,7 +242,7 @@ export default function App() {
 
     return () => clearTimeout(timer)
     // The lesson itself, and the inputs the checks are made against.
-  }, [lesson, form.materials, form.classSize, form.durationMinutes, form.learningObjective, form.curriculumObjective])
+  }, [lesson, form.materials, form.classSize, form.durationMinutes, form.learningObjective, form.curriculumObjective, form.curriculumDocument])
 
   const ready = canGenerate(form)
 
@@ -270,6 +271,10 @@ export default function App() {
 
       <main className="sheet">
         <LessonRequestForm form={form} onChange={handleChange} />
+        <CurriculumDocument
+          value={form.curriculumDocument || ''}
+          onChange={(value) => handleChange('curriculumDocument', value)}
+        />
         <RealityForm form={form} onChange={handleChange} />
 
         <section className="card">

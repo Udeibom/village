@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict'
 import { canGenerate, emptyForm, normalizeForm, toNumberOrNull } from '../src/lib/formRules.js'
 import { checkLesson, shortfalls, parseQuantity, objectivesMatch } from '../server/validate.js'
+import { findInDocument, documentLines } from '../shared/curriculum.js'
 import { validateLessonShape } from '../server/grok.js'
 import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
 import { runCheck } from '../server/check.js'
@@ -647,6 +648,79 @@ check('an imported lesson is a candidate until this classroom proves it', () => 
 check('the file name is one a teacher would recognise', () => {
   assert.equal(cardFileName('Understanding and comparing ratios'), 'understanding-and-comparing-ratios.village.json')
   assert.equal(cardFileName(''), 'lesson.village.json')
+})
+
+section('The curriculum check, grounded in the teacher\'s own document')
+const CURRICULUM_DOCUMENT = `Mathematics — Number — Ratios
+Represent and compare ratios using equivalent forms, including word problems.
+Fractions: compare and order fractions with the same denominator.
+Measurement: convert between millimetres and centimetres.`
+
+check('the objective is found in the document, and the line is quoted back', () => {
+  const found = findInDocument(
+    'By the end of the lesson, learners should be able to represent and compare ratios using equivalent forms.',
+    CURRICULUM_DOCUMENT,
+  )
+  assert.equal(found.found, true)
+  assert.match(found.line, /Represent and compare ratios/)
+  assert.equal(found.lineNumber, 2)
+})
+check('a document that does not cover the objective is not matched', () => {
+  const found = findInDocument(
+    'Explain how sound is produced by vibrating objects',
+    CURRICULUM_DOCUMENT,
+  )
+  assert.equal(found.found, false)
+  assert.equal(found.reason, 'not-found')
+})
+check('an empty document says so rather than pretending', () => {
+  assert.equal(findInDocument('Represent ratios', '').found, false)
+  assert.equal(findInDocument('Represent ratios', '   \n  ').reason, 'no-document')
+})
+check('the document lines are read one line at a time', () => {
+  const lines = documentLines(CURRICULUM_DOCUMENT)
+  assert.equal(lines.length, 4)
+  assert.equal(lines[0], 'Mathematics — Number — Ratios')
+})
+check('with a document, the curriculum row quotes it', () => {
+  const result = checkLesson(exampleLesson, {
+    ...exampleForm,
+    curriculumDocument: CURRICULUM_DOCUMENT,
+  })
+  assert.equal(result.checks.curriculum.status, 'ok')
+  assert.match(result.checks.curriculum.detail, /Your curriculum document says/)
+  assert.match(result.checks.curriculum.detail, /Represent and compare ratios/)
+})
+check('with a document, the document decides — not the model\'s own claim', () => {
+  // The model says it could not verify the match; the document settles it.
+  const lesson = { ...exampleLesson, curriculumConfidence: 'unverified' }
+  const result = checkLesson(lesson, {
+    ...exampleForm,
+    curriculumDocument: CURRICULUM_DOCUMENT,
+  })
+  assert.equal(result.checks.curriculum.status, 'ok')
+  assert.match(result.checks.curriculum.detail, /Represent and compare ratios/)
+})
+check('a document that does not cover the objective is reported, not passed', () => {
+  const result = checkLesson(exampleLesson, {
+    ...exampleForm,
+    curriculumDocument: 'Music — Performance — Rhythm and pulse.',
+  })
+  assert.equal(result.checks.curriculum.status, 'fail')
+  assert.match(result.checks.curriculum.detail, /could not find that objective/)
+})
+check('without a document the row still says it is unverified', () => {
+  const result = checkLesson(exampleLesson, exampleForm)
+  assert.match(result.checks.curriculum.detail, /has not checked it against your curriculum document/)
+})
+check('no objective and no document is still a failure', () => {
+  const result = checkLesson(exampleLesson, {
+    ...exampleForm,
+    curriculumObjective: '',
+    curriculumDocument: CURRICULUM_DOCUMENT,
+  })
+  assert.equal(result.checks.curriculum.status, 'fail')
+  assert.match(result.checks.curriculum.detail, /No curriculum objective/)
 })
 
 section('The feasibility checker — materials')

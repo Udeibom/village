@@ -387,6 +387,11 @@ const FORM = {
     'No projector, no printing, no internet during the lesson. Pupils sit in groups of five.',
 }
 
+const CURRICULUM_DOCUMENT = `Mathematics — Number — Ratios
+Represent and compare ratios using equivalent forms, including word problems.
+Fractions: compare and order fractions with the same denominator.
+Measurement: convert between millimetres and centimetres.`
+
 async function fillTheForm() {
   await page.fill('input[name="grade"]', FORM.grade)
   await page.fill('input[name="subject"]', FORM.subject)
@@ -859,6 +864,50 @@ check('the teacher is asked how the lesson went', async () => {
   }
   const choices = await page.count('.button-outcome')
   if (choices !== 3) throw new Error(`expected 3 choices, got ${choices}`)
+})
+
+check('the teacher can ground the curriculum check in their own document', async () => {
+  await page.fill('textarea[name="curriculumDocument"]', CURRICULUM_DOCUMENT)
+  await sleep(600)
+
+  await page.waitFor(
+    `document.querySelector('.check-curriculum .check-detail') && document.querySelector('.check-curriculum .check-detail').textContent.includes('Your curriculum document says')`,
+    20000,
+    'the curriculum row to quote the document',
+  )
+
+  const detail = await page.text('.check-curriculum .check-detail')
+  if (!detail.includes('Represent and compare ratios')) {
+    throw new Error(`the curriculum row does not quote the document: "${detail}"`)
+  }
+})
+
+check('a document that does not cover the lesson is reported, not passed', async () => {
+  await page.fill(
+    'textarea[name="curriculumDocument"]',
+    'Music — Performance — Rhythm and pulse.',
+  )
+  await sleep(600)
+
+  await page.waitFor(
+    `document.querySelector('.verdict-title') && document.querySelector('.verdict-title').textContent.trim() === 'Needs attention'`,
+    20000,
+    'the panel to flag the curriculum',
+  )
+
+  const detail = await page.text('.check-curriculum .check-detail')
+  if (!detail.includes('could not find that objective')) {
+    throw new Error(`the curriculum row does not say it was not found: "${detail}"`)
+  }
+
+  // Put the teacher's own document back.
+  await page.fill('textarea[name="curriculumDocument"]', CURRICULUM_DOCUMENT)
+  await sleep(600)
+  await page.waitFor(
+    `document.querySelector('.verdict-title') && document.querySelector('.verdict-title').textContent.trim() === 'Ready to teach'`,
+    20000,
+    'the panel to clear again',
+  )
 })
 
 check('marking a lesson as worked banks it in the classroom\'s record', async () => {

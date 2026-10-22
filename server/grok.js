@@ -230,6 +230,17 @@ export function buildGenerationPrompt(form) {
   // only being told what to aim at.
   const preferred = describePreferred(form.preferredActivity)
 
+  // The teacher's own curriculum document, so the lesson can be written in the
+  // wording their scheme of work uses. It is capped: a whole scheme of work
+  // is more than the lesson needs.
+  const document_ = String(form.curriculumDocument || '').slice(0, 4000)
+  const documentSection = document_
+    ? `
+THE TEACHER'S CURRICULUM DOCUMENT (their own extract)
+${document_}
+`
+    : ''
+
   return `Plan one lesson for a real classroom.
 
 THE REQUEST
@@ -239,7 +250,7 @@ Topic and learning objective: ${form.topic || form.learningObjective || 'not sta
 Curriculum objective (pasted by the teacher): ${
     form.curriculumObjective || 'not stated'
   }
-
+${documentSection}
 THE CLASSROOM REALITY
 Class size: ${classSize}
 Lesson length: ${duration}

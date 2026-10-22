@@ -86,7 +86,7 @@ Build mode: fast
   Learner check: Bank the ratios lesson as "worked", change the topic to fractions, generate again, and look for the line saying where the activity came from.
   Commit: `Plan the next lesson around what worked before`
 
-- [ ] **9. A proven lesson can travel to another teacher**
+- [x] **9. A proven lesson can travel to another teacher**
   Becomes usable: A banked lesson exports as one small file. A colleague imports it and it enters their bank marked as a candidate from a colleague — not yet verified in their classroom.
   Why now: It is the smallest slice in the plan and it is the one that makes the bank worth something beyond one machine: a proven activity can travel to another teacher who has the same shelf, with no server and no account.
   PRD ref: `prd.md > A proven lesson can travel`

@@ -24,9 +24,9 @@ function MaterialRow({ row }) {
   )
 }
 
-function Check({ title, status, children }) {
+function Check({ title, status, name = '', children }) {
   return (
-    <section className="check">
+    <section className={`check${name ? ` check-${name}` : ''}`}>
       <h4 className="check-title">
         <span className="check-mark" aria-hidden="true">
           {status === 'ok' ? '✓' : '✗'}
@@ -110,7 +110,7 @@ export default function FeasibilityPanel({ feasibility, checking = false, rechec
         </div>
       )}
 
-      <Check title="Materials" status={materials.every((row) => row.status === 'ok') ? 'ok' : 'fail'}>
+      <Check title="Materials" name="materials" status={materials.every((row) => row.status === 'ok') ? 'ok' : 'fail'}>
         {materials.length === 0 ? (
           <p className="check-detail">
             This lesson does not ask for any materials.
@@ -124,15 +124,15 @@ export default function FeasibilityPanel({ feasibility, checking = false, rechec
         )}
       </Check>
 
-      <Check title="Timing" status={checks.timing.status}>
+      <Check title="Timing" name="timing" status={checks.timing.status}>
         <p className="check-detail">{checks.timing.detail}</p>
       </Check>
 
-      <Check title="Assessment" status={checks.assessment.status}>
+      <Check title="Assessment" name="assessment" status={checks.assessment.status}>
         <p className="check-detail">{checks.assessment.detail}</p>
       </Check>
 
-      <Check title="Curriculum" status={checks.curriculum.status}>
+      <Check title="Curriculum" name="curriculum" status={checks.curriculum.status}>
         <p className="check-detail">{checks.curriculum.detail}</p>
       </Check>
     </aside>

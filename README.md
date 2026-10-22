@@ -2,6 +2,20 @@
 
 Lesson plans that fit the room you actually have.
 
+![Watch the demo](demo/village-demo.mp4)
+
+**Watch it work (1:29):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4>
+
+The planning documents this was built from, kept in the repository:
+
+- [scope.md](devpost/scope.md) — the idea, narrowed to one thing
+- [prd.md](devpost/prd.md) — what it does, for whom
+- [spec.md](devpost/spec.md) — how it is built
+- [checklist.md](devpost/checklist.md) — the build, slice by slice
+- [app-map.html](devpost/app-map.html) — the app on one page
+
+MIT licensed.
+
 Village takes a lesson request (grade, subject, objective, your curriculum
 standard) and your classroom reality (class size, duration, constraints,
 materials with quantities), then builds a lesson around what you have — and

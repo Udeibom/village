@@ -108,6 +108,14 @@ const scrollTo = (selector) => `
   return 'ok';
 })()`
 
+const pressEnter = (selector) => `
+(() => {
+  const element = document.querySelector(${JSON.stringify(selector)});
+  if (!element) return 'missing';
+  element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  return 'ok';
+})()`
+
 /* ----------------------------------------------------------------- steps */
 
 const MATERIALS = [
@@ -268,6 +276,32 @@ async function run() {
     await sleep(1500)
     await evaluate(scrollTo('.feasibility'))
     await sleep(3500)
+  })
+
+  await beat('the teacher changes the lesson, and the code says no', async () => {
+    // The teacher writes "marker pens" into the lesson. There are no marker
+    // pens in this classroom, and the checker knows that — no model, no
+    // network, no waiting.
+    await evaluate(scrollTo('.activity-material-name'))
+    await sleep(1000)
+    await evaluate(click('.activity-material-name'))
+    await sleep(600)
+    await evaluate(setField('.editable-input', 'marker pens'))
+    await sleep(300)
+    await evaluate(pressEnter('.editable-input'))
+    await waitFor(
+      `document.querySelector('.feasibility') && document.querySelector('.feasibility').textContent.includes('marker pens')`,
+      'the panel to name the new material',
+      30000,
+    )
+    await waitFor(
+      `document.querySelector('.feasibility') && document.querySelector('.feasibility').textContent.includes('re-checked this after your change')`,
+      'the panel to say it re-checked',
+      30000,
+    )
+    await sleep(1500)
+    await evaluate(scrollTo('.feasibility'))
+    await sleep(4000)
   })
 
   await beat('the money shot: the measuring cups go', async () => {

@@ -1,6 +1,6 @@
 # The demo video
 
-`village-demo.mp4` is the short recording of Village working: 1 minute 58
+`village-demo.mp4` is the short recording of Village working: 1 minute 42
 seconds, 1440×900, no narration.
 
 Public download (no sign-in):
@@ -42,11 +42,13 @@ writes them to a folder that ffmpeg then assembles.
 ```bash
 npm run dev                 # in one terminal, with your key in .env
 node demo/record-demo.mjs   # writes /tmp/opencode/demo-frames
+bash demo/assemble.sh       # writes /tmp/opencode/village-demo.mp4
 ```
 
-The frames and the ffmpeg commands are not in this file; the recording script
-prints where it put them. The video itself has no narration — the on-screen
-text carries the story, so a voice-over can be added when it is uploaded.
+`assemble.sh` makes the title card and the end card, paces the captured
+frames so each one is on screen long enough to read, and joins the three at
+30 frames a second. The video itself has no narration — the on-screen text
+carries the story, so a voice-over can be added when it is uploaded.
 
 `screenshot.mjs` takes the picture the top of the main README shows, in the
 same way, from the same running app.

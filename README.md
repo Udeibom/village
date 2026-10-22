@@ -8,7 +8,7 @@ Lesson plans that fit the room you actually have.
 material, the timings, the assessment, the curriculum line — and what it
 could not verify.*
 
-**Watch it work (1:58):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4>
+**Watch it work (1:42):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4>
 
 This was built for a classroom like the one it took to build it: a Kenyan
 Primary 6 class, 40 pupils, 35 minutes, no projector, no printing, no

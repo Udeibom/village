@@ -45,6 +45,7 @@ export default function FeasibilityPanel({ feasibility, checking = false, rechec
   const ready = verdict === 'ready'
   const materials = checks.materials || []
   const rebuilds = feasibility.rebuildsAttempted || 0
+  const timingFitted = feasibility.timingFitted || null
 
   return (
     <aside className="feasibility" aria-labelledby="feasibility-heading">
@@ -82,6 +83,13 @@ export default function FeasibilityPanel({ feasibility, checking = false, rechec
           {ready
             ? ''
             : ' It still could not sort everything out — the gaps below are the ones left.'}
+        </p>
+      )}
+
+      {timingFitted && timingFitted.fitted && (
+        <p className="timing-note">
+          Village fitted the activity timings from {timingFitted.before} minutes
+          to {timingFitted.after} — your lesson length, worked out in code.
         </p>
       )}
 

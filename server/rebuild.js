@@ -9,6 +9,7 @@
 // `rebuild` are passed in.
 
 import { checkLesson, shortfalls } from './validate.js'
+import { fitLessonToBudget } from './timing.js'
 
 export const MAX_REBUILDS = 2
 
@@ -16,9 +17,18 @@ export async function buildLessonWithRebuilds(
   form,
   { generate, rebuild, maxRebuilds = MAX_REBUILDS } = {},
 ) {
-  let lesson = await generate(form)
+  // The minutes are fitted in code before anything is checked, so the model
+  // never gets to be wrong about arithmetic.
+  let timing = fitLessonToBudget(await generate(form), form.durationMinutes)
+  let lesson = timing.lesson
   let feasibility = checkLesson(lesson, form)
   let rebuildsAttempted = 0
+  // If the timings were fitted at any point in the build, the panel says so.
+  let timingFitted = {
+    fitted: timing.fitted,
+    before: timing.before,
+    after: timing.after,
+  }
 
   while (rebuildsAttempted < maxRebuilds) {
     const gaps = shortfalls(feasibility)
@@ -31,7 +41,14 @@ export async function buildLessonWithRebuilds(
     rebuildsAttempted += 1
 
     try {
-      lesson = await rebuild(lesson, form, gaps)
+      timing = fitLessonToBudget(
+        await rebuild(lesson, form, gaps),
+        form.durationMinutes,
+      )
+      lesson = timing.lesson
+      if (timing.fitted) {
+        timingFitted = { fitted: true, before: timing.before, after: timing.after }
+      }
     } catch (error) {
       // A failed rebuild must not take the lesson down with it. We keep the
       // lesson we have and let the panel name the gaps that are left.
@@ -43,5 +60,6 @@ export async function buildLessonWithRebuilds(
   }
 
   feasibility.rebuildsAttempted = rebuildsAttempted
+  feasibility.timingFitted = timingFitted
   return { lesson, feasibility }
 }

@@ -501,6 +501,14 @@ check('the lesson shows its activities', async () => {
   if (total !== 35) throw new Error(`the activities add up to ${total} minutes, not 35`)
 })
 
+check('the panel says when Village fitted the timings itself', async () => {
+  const note = await page.text('.timing-note')
+  if (!note) throw new Error('the panel does not say the timings were fitted')
+  if (!note.includes('40 minutes') || !note.includes('35')) {
+    throw new Error(`the timing note does not name both minutes: "${note}"`)
+  }
+})
+
 check('the feasibility panel gives a verdict', async () => {
   const verdict = await page.text('.verdict-title')
   if (!verdict) throw new Error('no verdict')

@@ -30,7 +30,10 @@ function normalise(name) {
 
 export function stubLesson(form) {
   const duration = form.durationMinutes || 40
-  const minutes = splitEvenly(duration, 4)
+  // The stub over-runs the lesson on purpose, the way the real model did the
+  // first time it was asked for 35 minutes. Village fits the timings in code,
+  // so the browser check exercises that path for real.
+  const minutes = splitEvenly(duration + 5, 4)
   const inventory = form.materials || []
   const objective = form.learningObjective || form.topic || 'the learning objective'
   const preferred = form.preferredActivity || null

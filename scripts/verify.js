@@ -9,6 +9,11 @@ import { checkLesson, shortfalls, parseQuantity, objectivesMatch } from '../serv
 import { findInDocument, documentLines } from '../shared/curriculum.js'
 import { validateLessonShape } from '../server/grok.js'
 import { buildLessonWithRebuilds, MAX_REBUILDS } from '../server/rebuild.js'
+import {
+  fitActivitiesToBudget,
+  fitLessonToBudget,
+  totalMinutes,
+} from '../server/timing.js'
 import { runCheck } from '../server/check.js'
 import {
   addRecord,
@@ -1100,6 +1105,110 @@ await acheck('a rebuild that fails does not take the lesson down', async () => {
   assert.equal(feasibility.rebuildsAttempted, 1)
   assert.equal(feasibility.verdict, 'attention')
   assert.equal(lesson.title, countableLesson.title)
+})
+
+section('Fitting the timings in code')
+check('forty minutes of activity are fitted onto a thirty-five minute lesson', () => {
+  const activities = [10, 10, 10, 10].map((minutes) => ({ durationMinutes: minutes }))
+  const result = fitActivitiesToBudget(activities, 35)
+  assert.equal(result.fitted, true)
+  assert.equal(result.before, 40)
+  assert.equal(result.after, 35)
+  assert.equal(totalMinutes(result.activities), 35)
+})
+check('the activities keep their order and their number', () => {
+  const activities = [
+    { name: 'Warm-up', durationMinutes: 10 },
+    { name: 'Main activity', durationMinutes: 12 },
+    { name: 'Practice', durationMinutes: 10 },
+    { name: 'Consolidation', durationMinutes: 8 },
+  ]
+  const result = fitActivitiesToBudget(activities, 35)
+  assert.equal(result.activities.length, 4)
+  assert.deepEqual(
+    result.activities.map((activity) => activity.name),
+    ['Warm-up', 'Main activity', 'Practice', 'Consolidation'],
+  )
+})
+check('a lesson that already fits is left exactly as it is', () => {
+  const activities = [{ durationMinutes: 10 }, { durationMinutes: 15 }, { durationMinutes: 10 }]
+  const result = fitActivitiesToBudget(activities, 35)
+  assert.equal(result.fitted, false)
+  assert.equal(result.reason, 'already-fits')
+  assert.equal(result.activities[1].durationMinutes, 15)
+})
+check('a lesson within the tolerance is left alone too', () => {
+  const activities = [{ durationMinutes: 17 }, { durationMinutes: 16 }]
+  const result = fitActivitiesToBudget(activities, 35)
+  assert.equal(result.fitted, false)
+  assert.equal(result.after, 33)
+})
+check('one activity gets the whole lesson', () => {
+  const result = fitActivitiesToBudget([{ durationMinutes: 40 }], 35)
+  assert.equal(result.fitted, true)
+  assert.equal(result.activities[0].durationMinutes, 35)
+})
+check('no activity is squeezed out to nothing', () => {
+  const activities = [
+    { durationMinutes: 30 },
+    { durationMinutes: 1 },
+    { durationMinutes: 1 },
+    { durationMinutes: 1 },
+  ]
+  const result = fitActivitiesToBudget(activities, 20)
+  assert.equal(result.fitted, true)
+  assert.equal(totalMinutes(result.activities), 20)
+  for (const activity of result.activities) {
+    assert.ok(activity.durationMinutes >= 1)
+  }
+})
+check('a lesson too short to fit is left alone, not mangled', () => {
+  const activities = [{ durationMinutes: 10 }, { durationMinutes: 10 }, { durationMinutes: 10 }]
+  const result = fitActivitiesToBudget(activities, 2)
+  assert.equal(result.fitted, false)
+  assert.equal(result.reason, 'too-short')
+})
+check('a lesson with no length given is left alone', () => {
+  const activities = [{ durationMinutes: 10 }]
+  const result = fitActivitiesToBudget(activities, null)
+  assert.equal(result.fitted, false)
+  assert.equal(result.reason, 'no-budget')
+})
+check('the whole lesson is fitted, and the change is reported', () => {
+  const result = fitLessonToBudget(
+    {
+      title: 'A lesson',
+      activities: [
+        { name: 'One', durationMinutes: 10 },
+        { name: 'Two', durationMinutes: 10 },
+        { name: 'Three', durationMinutes: 10 },
+        { name: 'Four', durationMinutes: 10 },
+      ],
+    },
+    35,
+  )
+  assert.equal(result.fitted, true)
+  assert.equal(result.before, 40)
+  assert.equal(result.after, 35)
+  assert.equal(totalMinutes(result.lesson.activities), 35)
+  assert.equal(result.lesson.title, 'A lesson')
+})
+await acheck('the lesson that comes back fits the lesson, without the model knowing', async () => {
+  const { lesson, feasibility } = await buildLessonWithRebuilds(countableForm, {
+    generate: async () => ({
+      ...countableLesson,
+      activities: countableLesson.activities.map((activity) => ({
+        ...activity,
+        durationMinutes: activity.durationMinutes + 5,
+      })),
+    }),
+    rebuild: async (current) => current,
+  })
+  assert.equal(totalMinutes(lesson.activities), 35)
+  assert.equal(feasibility.checks.timing.status, 'ok')
+  assert.equal(feasibility.timingFitted.fitted, true)
+  assert.equal(feasibility.timingFitted.before, 55)
+  assert.equal(feasibility.timingFitted.after, 35)
 })
 
 section('Re-checking an edited lesson')

@@ -95,7 +95,7 @@ Build mode: fast
   Learner check: Export the lesson you banked, import it as if you were a colleague, and see how it is labelled.
   Commit: `Let a proven lesson travel to another teacher`
 
-- [ ] **10. The curriculum check uses the teacher's own document**
+- [x] **10. The curriculum check uses the teacher's own document**
   Becomes usable: The teacher pastes or uploads their curriculum extract. Village searches that document for the objective and quotes the line it found, so the curriculum row stops being "unverified" and becomes a grounded claim — or an honest "I could not find that in the document you gave me".
   Why now: "Curriculum" is in the product's name, and right now the curriculum row is the one check that can never pass. It is also the check a chat window cannot make honestly, because a model's memory of a curriculum is not citable.
   PRD ref: `prd.md > The curriculum check uses the teacher's own document`

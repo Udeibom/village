@@ -27,7 +27,7 @@ actually happened in this build.
 | --- | --- | --- |
 | Where the lesson comes from | your message | your shelf, as a hard constraint |
 | "Are you sure?" | re-asserts the same guess | re-runs the check, with code |
-| Who checks the work | the model, about itself | `server/validate.js`, no AI in the file |
+| Who checks the work | the model, about itself | `shared/validate.js`, no AI in the file |
 | When it's wrong | you find out in the classroom | the panel names it before you teach |
 | A shortage | you have to notice and re-prompt | the lesson is rewritten and re-checked |
 | What it can't verify | hidden | shown: "quantity unverified", "curriculum unverified" |
@@ -46,7 +46,7 @@ Three things that happened here, in the real app, that a chat window cannot do:
    checker called it a mismatch. The lesson was fine; the *checker* was comparing too
    literally. That is only findable because something independent was checking, and
    Village's own fix (compare on the first four letters of each word) is in
-   `server/validate.js` → `matchingKey`, held in place by a test.
+   `shared/text.js` → `matchingKey`, held in place by a test.
 3. **Village refuses to guess.** Declared as "beans — a bag", the panel says: *"You listed
    beans (a bag), so Village can see you have it — but not that you have enough of it."*
    A chat model will happily say a bag is plenty for 40 pupils. Village marks it

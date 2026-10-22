@@ -91,7 +91,7 @@
         is ready to teach.
       </p>
         <p class="lede">
-          Take-home reference, generated from the code at commit <code>2be71a5</code>.
+          Take-home reference, generated from the code at commit <code>2c0d94c</code>.
           A snapshot — it can drift as the code changes.
         </p>
 
@@ -113,9 +113,63 @@
             <strong>The checker</strong> — plain functions, no AI: materials against the
             inventory, timings against the lesson length, the assessment against the
             objective, and the curriculum claim.
-            <br /><code>server/validate.js</code>
+            <br /><code>shared/validate.js</code>
+          </li>
+          <li>
+            <strong>The classroom</strong> — what this teacher owns, what worked, and what a
+            colleague proved elsewhere. Kept on the teacher's own device, never on a server.
+            <br /><code>src/lib/store.js</code>, <code>src/lib/bank.js</code>,
+            <code>src/lib/reuse.js</code>, <code>src/lib/lessonCard.js</code>
           </li>
         </ol>
+      </div>
+
+      <h2>What changed after the first five slices</h2>
+      <div class="card">
+        <p>
+          The core — write, check, rebuild, edit, print — was finished first. Then the scope
+          was widened, and these are the parts a chat window structurally cannot follow:
+        </p>
+        <ul>
+          <li>
+            <strong>The classroom is remembered.</strong> The shelf, the classroom's record and
+            the curriculum document live in <code>localStorage</code>
+            (<code>src/lib/store.js</code>), with a "Forget this classroom" button.
+          </li>
+          <li>
+            <strong>"How did it go?"</strong> The teacher marks a lesson as worked, changed or
+            failed (<code>src/lib/bank.js</code>, <code>src/components/OutcomeStrip.jsx</code>),
+            and it is banked with its date, its class size and where it came from.
+          </li>
+          <li>
+            <strong>The next lesson is planned around what worked before</strong> — and the
+            rules for that are code, not the model's judgement
+            (<code>src/lib/reuse.js</code>): proved here, materials on the shelf, class size
+            and lesson length within a quarter, the activity no more than 60% of the budget,
+            same subject and year group.
+          </li>
+          <li>
+            <strong>A proven lesson travels</strong> as one small file
+            (<code>src/lib/lessonCard.js</code>), labelled as a candidate until it is proved in
+            the receiving classroom.
+          </li>
+          <li>
+            <strong>The curriculum check uses the teacher's own document</strong>
+            (<code>shared/curriculum.js</code>): the objective is searched for in their
+            pasted or uploaded extract, and the row quotes the line it found. With a document
+            present, the document decides.
+          </li>
+          <li>
+            <strong>The timings are fitted in code</strong> (<code>server/timing.js</code>):
+            the model's minutes are scaled onto the lesson's budget, and the panel says so.
+          </li>
+          <li>
+            <strong>It works with no internet.</strong> The kernel moved to
+            <code>shared/</code> so the browser runs the same checker as the server
+            (<code>src/lib/localCheck.js</code>). Checking, editing, the record and the
+            print-out all work offline; only writing a new lesson needs a connection.
+          </li>
+        </ul>
       </div>
 
       <h2>One action, end to end</h2>
@@ -147,7 +201,7 @@
 
         <rect class="accent" x="608" y="40" width="190" height="62" rx="6" />
         <text x="620" y="66" font-size="14">Checker checks it</text>
-        <text class="small" x="620" y="88">server/validate.js</text>
+        <text class="small" x="620" y="88">shared/validate.js</text>
 
         <path class="arrow" d="M 158 71 L 190 71" />
         <path class="arrow" d="M 364 71 L 396 71" />
@@ -167,7 +221,7 @@
         <text class="small" x="316" y="132">short → rebuild (max 2) → check again</text>
       </svg>
 
-      <h2>A 3-stop route through the code</h2>
+      <h2>A 4-stop route through the code</h2>
       <p class="lede">
         A reference route — follow it if you want to see the whole path for yourself.
         The teacher in this project has already run it live, so this is a pointer, not a test.
@@ -185,7 +239,7 @@
 
       <div class="route-stop">
         <h3>2. The part that must not lie</h3>
-        <p><code>server/validate.js</code> → <code>checkLesson(lesson, form)</code></p>
+        <p><code>shared/validate.js</code> → <code>checkLesson(lesson, form)</code></p>
         <p>
           Four checks, each returning its own pass/fail and a plain-language line for the
           teacher: <code>checkMaterials</code> (peak simultaneous need, not a sum),
@@ -197,7 +251,20 @@
       </div>
 
       <div class="route-stop">
-        <h3>3. The loop that keeps trying</h3>
+        <h3>3. The rule for what may be reused</h3>
+        <p><code>src/lib/reuse.js</code> → <code>findReusableActivity(bank, form)</code></p>
+        <p>
+          Which of the teacher's own proved activities fits the lesson being planned. It is
+          decided by plain rules — proved here, every material on the shelf now, class size
+          and lesson length within twenty-five per cent, the activity no more than sixty per
+          cent of the budget, the same subject and year group — and the objective only
+          decides which candidate wins. The model is told what to reuse; it is not asked to
+          decide.
+        </p>
+      </div>
+
+      <div class="route-stop">
+        <h3>4. The loop that keeps trying</h3>
         <p><code>server/rebuild.js</code> → <code>buildLessonWithRebuilds(...)</code></p>
         <p>
           Write, check, and if something is short, rebuild the lesson around what is
@@ -218,7 +285,17 @@
             actually produced.
           </li>
           <li>
-            <strong>A rule about what counts as enough</strong> → <code>server/validate.js</code>.
+            <strong>What the classroom knows</strong> → <code>src/lib/bank.js</code> and
+            <code>src/lib/reuse.js</code>. The record of what was taught, what worked, and
+            the rules that decide what may be planned again.
+          </li>
+          <li>
+            <strong>What may be said about the curriculum</strong> →
+            <code>shared/curriculum.js</code>. The search through the teacher's own document,
+            and the rule that the document decides whenever there is one.
+          </li>
+          <li>
+            <strong>A rule about what counts as enough</strong> → <code>shared/validate.js</code>.
             <code>requiredMaterials</code> works out the peak simultaneous need,
             <code>parseQuantity</code> decides what can be counted, <code>objectivesMatch</code>
             and <code>matchingKey</code> decide whether the assessment really tests the objective.
@@ -254,7 +331,8 @@
           <strong>How it was settled:</strong> by reading the two texts and asking which side
           was at fault — the model, or the checker. The assessment did test the objective, so the
           checker was comparing too literally. The fix was in
-          <code>matchingKey</code> (<code>server/validate.js</code>): words are compared on their
+          <code>matchingKey</code> (<code>shared/text.js</code>, used by
+          <code>shared/validate.js</code>): words are compared on their
           first four letters, so “comparing” and “compare” are the same word.
         </p>
         <p>
@@ -281,13 +359,13 @@ npm install
 cp .env.example .env     # then paste your GROQ_API_KEY into .env
 npm run dev             # page on http://localhost:5173, API on :3001</code></pre>
         <p style="margin-bottom: 0.3rem;">Checks, in the order worth running them:</p>
-        <pre><code>npm run verify         # 51 assertions on the rules — no browser, no API calls
-npm run browser-check  # 27 checks driving the real app in headless Chrome (stubbed, free)
+        <pre><code>npm run verify         # 114 assertions on the rules — no browser, no API calls
+npm run browser-check  # 50 checks driving the real app in headless Chrome (stubbed, free)
 npm run ai-check       # a live run against Groq — costs a little money</code></pre>
       </div>
 
       <footer>
-        Generated from the code at commit <code>2be71a5</code>. Everything above is a snapshot
+        Generated from the code at commit <code>2c0d94c</code>. Everything above is a snapshot
         of that commit; if the code moves on, the map can drift. The live app is the source of
         truth — start it and try the journey.
       </footer>

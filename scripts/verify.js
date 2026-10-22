@@ -761,6 +761,74 @@ check('a count you cannot measure is unverified, not quietly passed', () => {
   const row = result.checks.materials.find((r) => r.name === 'beans')
   assert.equal(row.status, 'quantity-unverified')
 })
+check('a material the model called singular is the material the teacher owns', () => {
+  // The model writes "measuring cup", the teacher's list says "measuring
+  // cups". That is the same cup, not a missing one — and it must not send
+  // the rebuild loop after a lesson that was already right.
+  const lesson = {
+    ...exampleLesson,
+    activities: [
+      {
+        ...exampleLesson.activities[0],
+        materials: [{ name: 'measuring cup', quantityNeeded: '2' }],
+      },
+    ],
+  }
+  const result = checkLesson(lesson, exampleForm)
+  const row = result.checks.materials.find((r) => r.name === 'measuring cup')
+  assert.equal(row.status, 'ok')
+  assert.equal(row.detail.includes('not on your list'), false)
+})
+check('a material named the way a teacher would say it is still that material', () => {
+  const lesson = {
+    ...exampleLesson,
+    activities: [
+      {
+        ...exampleLesson.activities[0],
+        materials: [{ name: 'a handful of beans', quantityNeeded: 'a handful' }],
+      },
+    ],
+  }
+  const result = checkLesson(lesson, exampleForm)
+  const row = result.checks.materials.find((r) => r.name === 'a handful of beans')
+  assert.equal(row.status, 'quantity-unverified')
+})
+check('a material the teacher really does not have is still flagged', () => {
+  // The matching must not get so generous that a missing material passes.
+  const lesson = {
+    ...exampleLesson,
+    activities: [
+      {
+        ...exampleLesson.activities[0],
+        materials: [{ name: 'marker pens', quantityNeeded: '8' }],
+      },
+    ],
+  }
+  const result = checkLesson(lesson, exampleForm)
+  const row = result.checks.materials.find((r) => r.name === 'marker pens')
+  assert.equal(row.status, 'missing')
+})
+check('a shortage is still a shortage when the wording differs', () => {
+  const lesson = {
+    ...exampleLesson,
+    activities: [
+      {
+        ...exampleLesson.activities[0],
+        materials: [{ name: 'measuring cup', quantityNeeded: '8' }],
+      },
+    ],
+  }
+  const form = {
+    ...exampleForm,
+    materials: exampleInventory.map((m) =>
+      m.name === 'measuring cups' ? { ...m, quantity: '2' } : m,
+    ),
+  }
+  const result = checkLesson(lesson, form)
+  const row = result.checks.materials.find((r) => r.name === 'measuring cup')
+  assert.equal(row.status, 'short')
+  assert.equal(row.shortBy, 6)
+})
 check('the same material used twice needs the peak, not the sum', () => {
   const lesson = {
     ...exampleLesson,

@@ -65,6 +65,33 @@ function countLabel(name, quantity) {
 
 /* ---------------------------------------------------------- materials */
 
+// The name a material is compared under. "measuring cups" on the teacher's
+// list and "measuring cup" in the lesson are the same thing, and "a handful
+// of beans" and "beans" are too. Without this the checker tells a teacher
+// their lesson needs a material they own, and then rebuilds a lesson that
+// was already right — the exact failure the checker exists to prevent.
+function materialKey(name) {
+  return singularise(normaliseName(name))
+    .replace(/\s*\b(pieces?)\b\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Two names are the same material when one is a run of words inside the
+// other: "bean" inside "a handful of bean", "marker" inside "marker pens".
+// The comparison is on whole words, so "pen" is not inside "pencil".
+function sharesWords(a, b) {
+  if (!a || !b) return false
+  const aWords = a.split(' ')
+  const bWords = b.split(' ')
+  const [shorter, longer] = aWords.length <= bWords.length ? [aWords, bWords] : [bWords, aWords]
+  for (let start = 0; start + shorter.length <= longer.length; start += 1) {
+    const window = longer.slice(start, start + shorter.length).join(' ')
+    if (window === shorter.join(' ')) return true
+  }
+  return false
+}
+
 // Every material the lesson needs, with the largest amount needed at one
 // time. Activities happen one after another, so the same bottle tops are
 // used again in the next activity — the peak is what has to exist, not the
@@ -74,12 +101,12 @@ function requiredMaterials(lesson) {
 
   for (const activity of lesson.activities || []) {
     for (const material of activity.materials || []) {
-      const name = normaliseName(material.name)
-      if (!name) continue
+      const key = materialKey(material.name)
+      if (!key) continue
       const quantity = parseQuantity(material.quantityNeeded)
-      const existing = peak.get(name)
+      const existing = peak.get(key)
       if (!existing) {
-        peak.set(name, {
+        peak.set(key, {
           name: clean(material.name),
           quantity,
           quantityText: clean(material.quantityNeeded),
@@ -99,18 +126,28 @@ function requiredMaterials(lesson) {
 function checkMaterials(lesson, inventory) {
   const available = new Map()
   for (const item of inventory || []) {
-    const name = normaliseName(item.name)
-    if (!name) continue
-    available.set(name, {
+    const key = materialKey(item.name)
+    if (!key) continue
+    available.set(key, {
       name: clean(item.name),
       quantity: parseQuantity(item.quantity),
       quantityText: clean(item.quantity),
     })
   }
 
+  // The teacher's own name wins. Only when there is no exact match does the
+  // checker look for the same material under a different wording.
+  const findMaterial = (key) => {
+    if (available.has(key)) return available.get(key)
+    for (const [haveKey, item] of available) {
+      if (sharesWords(key, haveKey)) return item
+    }
+    return undefined
+  }
+
   const rows = []
   for (const need of requiredMaterials(lesson)) {
-    const have = available.get(normaliseName(need.name))
+    const have = findMaterial(materialKey(need.name))
 
     if (!have) {
       rows.push({

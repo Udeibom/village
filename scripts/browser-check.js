@@ -676,6 +676,14 @@ check('editing an activity re-checks the lesson', async () => {
   await page.fill('.activities > .activity:first-child .editable-input', '2')
   await page.pressEnter('.activities > .activity:first-child .editable-input')
 
+  // Wait for the re-check itself, not for the verdict: the verdict may
+  // already have been "Needs attention" before the edit (the beans line
+  // always says so), and reading the panel then would catch it mid-check.
+  await page.waitFor(
+    `document.querySelector('.feasibility') && document.querySelector('.feasibility').textContent.includes('re-checked this after your change')`,
+    20000,
+    'the panel to say it re-checked the change',
+  )
   await page.waitFor(
     `document.querySelector('.verdict-title') && document.querySelector('.verdict-title').textContent.trim() === 'Needs attention'`,
     20000,

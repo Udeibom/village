@@ -295,6 +295,20 @@ check('an assessment that describes the objective in its own words still counts'
   const result = checkLesson(lesson, exampleForm)
   assert.equal(result.checks.assessment.status, 'ok')
 })
+check('an assessment that uses its own verbs still counts', () => {
+  // "representing" is not "represent", and "comparing" is not "compare" —
+  // without the four-letter rule this assessment would be called a mismatch.
+  const lesson = {
+    ...exampleLesson,
+    assessment: {
+      ...exampleLesson.assessment,
+      servesObjective:
+        'Comparing and representing ratios in a short written task.',
+    },
+  }
+  const result = checkLesson(lesson, exampleForm)
+  assert.equal(result.checks.assessment.status, 'ok')
+})
 check('an assessment that declares no objective is flagged', () => {
   const lesson = {
     ...exampleLesson,

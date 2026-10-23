@@ -149,6 +149,29 @@ scripts/
 The division of labour matters: **the AI describes, the code checks.** The
 model is never asked to grade its own homework.
 
+## What is the model, and what is the code
+
+One file talks to the model: `server/grok.js`. It sends a prompt and reads
+strict JSON back. That is the whole of the AI in Village, and what it produces
+is prose — the words of the lesson.
+
+Everything that decides whether the lesson can be taught is ordinary
+JavaScript, in files you can read without a key and run without a network:
+
+| The question | Who answers it |
+| --- | --- |
+| Is the model's answer the shape we asked for? | `server/grok.js` rejects it — the teacher gets an error, not half a lesson |
+| Does the lesson need a material the teacher does not have, or more than they have? | `shared/validate.js`, against the list the teacher typed |
+| Do the activities add up to the lesson length? | `server/timing.js` — arithmetic, and if they do not add up it fits them itself |
+| Does the assessment test the objective? | `shared/validate.js`, word by word |
+| Is the lesson aligned to the curriculum standard? | `shared/curriculum.js`, by searching the document the teacher pasted. When that document is there, the model's own claim about alignment is ignored |
+| What happens when the lesson does not fit? | `server/rebuild.js` names the gaps it found, asks for a rebuild, checks again, and after two attempts reports what is still wrong instead of trying forever |
+| Does any of that need the connection? | No. The same `shared/validate.js` runs in the browser, so checking, editing, printing and the teacher's record all work offline |
+
+The claim is falsifiable: put a different model in `GROQ_MODEL` and the lesson
+changes, but every row above is answered the same way. If the checker were a
+wrapper, swapping the model would change the verdict.
+
 ## How it was built
 
 This was built with the Devpost Learn Skill Pack, in the order the pack lays
@@ -181,8 +204,10 @@ the app changes.
 ## What Village does not do
 
 It is not an authority on curriculum compliance. It reports what it can
-verify from what you gave it and flags the rest. The last line of every
-lesson stays with you:
+verify from what you gave it and flags the rest. It also does not judge the
+teaching: a lesson can fit the room and still be a weak lesson, and Village
+will say it is ready to teach, because fitting the room is what it checks.
+The last line of every lesson stays with you:
 
 > Illustrative draft — review against your curriculum and your pupils' prior
 > knowledge.

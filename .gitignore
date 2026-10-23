@@ -6,6 +6,9 @@
 .env.*
 !.env.example
 
+# Demo scratch (frames, profile, the assembled video)
+/demo/build/
+
 # Dependencies
 node_modules/
 

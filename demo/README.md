@@ -41,8 +41,8 @@ writes them to a folder that ffmpeg then assembles.
 
 ```bash
 npm run dev                 # in one terminal, with your key in .env
-node demo/record-demo.mjs   # writes /tmp/opencode/demo-frames
-bash demo/assemble.sh       # writes /tmp/opencode/village-demo.mp4
+node demo/record-demo.mjs   # writes demo/build/frames
+bash demo/assemble.sh       # writes demo/build/village-demo.mp4
 ```
 
 `assemble.sh` makes the title card and the end card, paces the captured

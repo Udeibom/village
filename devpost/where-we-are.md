@@ -95,7 +95,7 @@ npm run dev             # page on http://localhost:5173, API on :3001
 
 - **Do not use `pkill -f` to stop the servers.** The pattern matches the command you are
   running, so it kills your own shell. Use `fuser -k 3001/tcp` instead, or start the server
-  with `(nohup npm run dev > /tmp/opencode/dev.log 2>&1 &)`.
+  with `(nohup npm run dev > /tmp/village-dev.log 2>&1 &)`.
 - **The model id is `openai/gpt-oss-120b`**, set by `GROQ_MODEL`. `llama-3.3-70b-versatile` was
   retired by Groq; the spec's fallback clause applies.
 - **The browser check starts its own servers** on 5174 and 3011 with the AI stubbed

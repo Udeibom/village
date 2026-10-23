@@ -1,19 +1,22 @@
-// Records the Village demo on a private headless Chrome and writes an mp4.
+// Records the Village demo on a private headless Chrome and writes the frames.
 //
-//   node /tmp/opencode/record-demo.mjs
+//   node demo/record-demo.mjs
 //
 // It never touches the learner's own desktop: a separate Chrome profile, a
-// separate debug port, and only the app page is captured.
+// separate debug port, and only the app page is captured. assemble.sh turns
+// the frames into the video.
 
 import { spawn } from 'node:child_process'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const APP_URL = 'http://localhost:5173'
 const DEBUG_PORT = 9333
-const PROFILE = '/tmp/opencode/demo-profile'
-const SHOTS = '/tmp/opencode/demo-frames'
-const OUT = '/tmp/opencode/village-demo.mp4'
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+const BUILD = path.join(HERE, 'build')
+const PROFILE = process.env.DEMO_PROFILE || path.join(BUILD, 'profile')
+const SHOTS = process.env.DEMO_FRAMES || path.join(BUILD, 'frames')
 const WIDTH = 1440
 const HEIGHT = 900
 

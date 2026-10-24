@@ -311,8 +311,8 @@ export default function App() {
           Lesson plans that fit the room you actually have.
         </p>
         <p className="masthead-subtitle">
-          For teachers in low-resource classrooms. Type what you have, get a
-          lesson the code will check against it — no account needed.
+          For teachers in low-resource classrooms. Type your inventory, get a
+          tailored, checked lesson that fits your class and resources.
         </p>
         {!online && (
           <p className="offline-note" role="status">

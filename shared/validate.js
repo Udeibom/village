@@ -317,7 +317,7 @@ function checkCurriculum(lesson, curriculumObjective, curriculumDocument) {
     return {
       status: 'fail',
       detail:
-        'Village could not find that objective in the curriculum document you gave it. Check the wording, or paste the line that covers this lesson.',
+        'Village looks for the exact wording from the document you gave it. Village will not guess at alignment — paste the performance objective or the specific line from your curriculum that covers this lesson, and it will quote it back.',
     }
   }
 

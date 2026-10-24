@@ -22,9 +22,10 @@ export default function CurriculumDocument({ value, onChange }) {
       <h2 id="curriculum-document-heading">Your curriculum document</h2>
       <p className="card-hint">
         Paste the part of your scheme of work that covers this lesson, or
-        upload the file. Village then looks for your objective in your own
-        words and quotes the line it found — instead of saying &ldquo;aligned,
-        probably&rdquo;.
+        upload the file. Village looks for the exact wording of your objective
+        in that document and quotes the line it found — it will not guess at
+        alignment. If it cannot find it, paste the specific line from your
+        curriculum that covers this lesson.
       </p>
 
       <label className="field">

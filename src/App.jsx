@@ -310,6 +310,10 @@ export default function App() {
         <p className="tagline">
           Lesson plans that fit the room you actually have.
         </p>
+        <p className="masthead-subtitle">
+          For teachers in low-resource classrooms. Type what you have, get a
+          lesson the code will check against it — no account needed.
+        </p>
         {!online && (
           <p className="offline-note" role="status">
             No internet connection. Village still opens, still checks your
@@ -332,6 +336,11 @@ export default function App() {
             materials={form.materials}
             onChange={handleMaterialsChange}
           />
+          <p className="card-hint checker-callout">
+            Village rejects materials you do not have, checks the timings, and
+            re-checks your edits — in the browser if you are offline. The AI
+            writes the lesson; the code decides if it fits.
+          </p>
           <p className="card-hint storage-note">
             {remembered
               ? 'Your classroom is kept on this device — it is not sent to any service, and it will be here next time you open Village.'

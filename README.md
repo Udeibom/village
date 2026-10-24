@@ -10,11 +10,15 @@ could not verify.*
 
 **Watch it work (1:42):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo.mp4>
 
+**Try it out:** No account or login required. Run locally with `npm install && npm run dev`, open `http://localhost:5173`. The app runs offline once loaded; only writing a new lesson needs a connection.
+
 This was built for a classroom like the one it took to build it: a Kenyan
 Primary 6 class, 40 pupils, 35 minutes, no projector, no printing, no
 internet in the room. Bottle tops, beans, a few measuring cups.
 
-The planning documents this was built from, kept in the repository:
+## Built with the Build With AI: Basics skill pack
+
+This project was planned and built using the Build With AI: Basics skill pack (scope → PRD → spec → build → ship). The planning documents are kept in the repository:
 
 - [scope.md](devpost/scope.md) — the idea, narrowed to one thing
 - [prd.md](devpost/prd.md) — what it does, for whom
@@ -169,8 +173,9 @@ JavaScript, in files you can read without a key and run without a network:
 | Does any of that need the connection? | No. The same `shared/validate.js` runs in the browser, so checking, editing, printing and the teacher's record all work offline |
 
 The claim is falsifiable: put a different model in `GROQ_MODEL` and the lesson
-changes, but every row above is answered the same way. If the checker were a
-wrapper, swapping the model would change the verdict.
+changes, but every row above is answered the same way. We tested this with
+`openai/gpt-oss-20b` and the verdict held; only the wording changed. If the
+checker were a wrapper, swapping the model would change the verdict.
 
 ## How it was built
 

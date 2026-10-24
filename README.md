@@ -8,7 +8,7 @@ Lesson plans that fit the room you actually have.
 material, the timings, the assessment, the curriculum line — and what it
 could not verify.*
 
-**Watch it work (1:43):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo-v2.mp4>
+**Watch it work (1:60):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo-v3.mp4>
 
 **Try it out:** No account or login required. Run locally with `npm install && npm run dev`, open `http://localhost:5173`. The app runs offline once loaded; only writing a new lesson needs a connection.
 

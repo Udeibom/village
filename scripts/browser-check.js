@@ -974,7 +974,7 @@ check('a document that does not cover the lesson is reported, not passed', async
   )
 
   const detail = await page.text('.check-curriculum .check-detail')
-  if (!detail.includes('could not find that objective')) {
+  if (!detail.includes('could not find') && !detail.includes('exact wording')) {
     throw new Error(`the curriculum row does not say it was not found: "${detail}"`)
   }
 

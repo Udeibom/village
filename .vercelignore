@@ -1,0 +1,8 @@
+server
+demo
+scripts
+agent
+docs
+devpost
+*.log
+.env

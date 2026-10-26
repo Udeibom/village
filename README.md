@@ -10,7 +10,7 @@ could not verify.*
 
 **Try it out:** [https://village-plum.vercel.app](https://village-plum.vercel.app) or run locally with `npm install && npm run dev`, open `http://localhost:5173`. The app runs offline once loaded; only writing a new lesson needs a connection.
 
-This was built for a classroom like the one it took to build it: a Kenyan
+This was built for a classroom like the one it took to build it: a Nigerian
 Primary 6 class, 40 pupils, 35 minutes, no projector, no printing, no
 internet in the room. Bottle tops, beans, a few measuring cups.
 

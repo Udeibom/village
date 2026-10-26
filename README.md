@@ -8,9 +8,7 @@ Lesson plans that fit the room you actually have.
 material, the timings, the assessment, the curriculum line — and what it
 could not verify.*
 
-**Watch it work (1:60):** <https://github.com/Udeibom/village/releases/download/demo-1/village-demo-v4.mp4>
-
-**Try it out:** No account or login required. Run locally with `npm install && npm run dev`, open `http://localhost:5173`. The app runs offline once loaded; only writing a new lesson needs a connection.
+**Try it out:** [https://village-plum.vercel.app](https://village-plum.vercel.app) or run locally with `npm install && npm run dev`, open `http://localhost:5173`. The app runs offline once loaded; only writing a new lesson needs a connection.
 
 This was built for a classroom like the one it took to build it: a Kenyan
 Primary 6 class, 40 pupils, 35 minutes, no projector, no printing, no
@@ -189,7 +187,7 @@ in a notebook.
 | PRD | The journey, the behaviours, the states, and what the proof of concept does not do | [prd.md](devpost/prd.md) |
 | Spec | The stack, the file structure, the kernel, and the tests that would hold it | [spec.md](devpost/spec.md) |
 | Build | Twelve slices, each one verified before the next one started | [checklist.md](devpost/checklist.md) |
-| Ship | The demo, the licence, this repository, the submission | [where-we-are.md](devpost/where-we-are.md) |
+| Ship | The demo, the licence, this repository, the submission | — |
 
 Two decisions came out of that process and are still visible in the code:
 
@@ -202,9 +200,7 @@ Two decisions came out of that process and are still visible in the code:
   missing because the model wrote it in the singular — is still in the
   repository as a test.
 
-The demo video was recorded by a script in this repository
-([`demo/record-demo.mjs`](demo/record-demo.mjs)), so it can be re-made when
-the app changes.
+The demo video can be re-made when the app changes.
 
 ## What Village does not do
 
